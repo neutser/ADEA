@@ -3,7 +3,7 @@
  * Layout: left tool panel, center canvas, right AI sidebar.
  */
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   Sparkles, Undo, Redo, Download, Moon, Sun, Upload,
@@ -89,6 +89,7 @@ export default function CraftingStudio() {
             onChange={(e) => setMachine(e.target.value as any)}
             className="input-field"
             style={{ width: 180, padding: '8px 12px', fontSize: '0.9rem' }}
+            aria-label="Select machine"
           >
             {MACHINE_PROFILES.map((m) => (
               <option key={m.id} value={m.id}>{m.name}</option>
@@ -96,7 +97,7 @@ export default function CraftingStudio() {
           </select>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title={darkMode ? 'Light mode' : 'Dark mode'}>
+          <button onClick={() => setDarkMode(!darkMode)} style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title={darkMode ? 'Light mode' : 'Dark mode'} aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}>
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           <Link to="/marketplace" className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -122,7 +123,7 @@ export default function CraftingStudio() {
             >
               <Upload size={16} /> Import SVG / PNG / DXF
             </button>
-            <input ref={fileInputRef} type="file" accept=".svg,.png,.jpg,.jpeg,.dxf" style={{ display: 'none' }} onChange={handleFileImport} />
+            <input ref={fileInputRef} type="file" accept=".svg,.png,.jpg,.jpeg,.dxf" style={{ display: 'none' }} onChange={handleFileImport} aria-label="Import SVG, PNG, or DXF file" />
           </div>
         </div>
 
@@ -131,6 +132,8 @@ export default function CraftingStudio() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <button
               onClick={() => setCanvasMode('2d')}
+              aria-pressed={canvasMode === '2d' ? 'true' : 'false'}
+              aria-label="2D view"
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -148,6 +151,8 @@ export default function CraftingStudio() {
             </button>
             <button
               onClick={() => setCanvasMode('3d')}
+              aria-pressed={canvasMode === '3d' ? 'true' : 'false'}
+              aria-label="3D view"
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -165,6 +170,8 @@ export default function CraftingStudio() {
             </button>
             <button
               onClick={() => setCanvasMode('ar')}
+              aria-pressed={canvasMode === 'ar' ? 'true' : 'false'}
+              aria-label="AR preview"
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
@@ -185,10 +192,10 @@ export default function CraftingStudio() {
             <StudioCanvas />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
-            <button onClick={undo} disabled={past.length === 0} className="btn btn-outline" style={{ padding: '8px 12px' }}>
+            <button onClick={undo} disabled={past.length === 0} className="btn btn-outline" style={{ padding: '8px 12px' }} aria-label="Undo">
               <Undo size={16} style={{ marginRight: 4 }} /> Undo
             </button>
-            <button onClick={redo} disabled={future.length === 0} className="btn btn-outline" style={{ padding: '8px 12px' }}>
+            <button onClick={redo} disabled={future.length === 0} className="btn btn-outline" style={{ padding: '8px 12px' }} aria-label="Redo">
               <Redo size={16} style={{ marginRight: 4 }} /> Redo
             </button>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Layers: {layers.length}</span>

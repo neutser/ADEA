@@ -787,7 +787,7 @@ export default function ThreeDProductPreview({ config, productType = 'sign', mat
   return (
     <PreviewErrorBoundary>
       <div style={{ width: '100%', height: '100%', background: isNightMode ? '#050505' : '#111', borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
-        <Canvas shadows camera={{ position: [0, 0, 10], fov: 40 }}>
+        <Canvas shadows camera={{ position: [0, 0, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
         <SoftShadows size={25} samples={10} focus={0.5} />
         
         <color attach="background" args={[isNightMode ? '#050505' : '#151515']} />

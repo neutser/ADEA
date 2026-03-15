@@ -2,7 +2,7 @@
  * Layer panel — Cut, Engrave, Emboss layers with visibility/lock.
  */
 
-import { useStudioStore, type DesignLayer } from '@/stores/studioStore';
+import { useStudioStore } from '@/stores/studioStore';
 import { Eye, EyeOff, Lock, Unlock, Trash2 } from 'lucide-react';
 
 export function LayerPanel() {

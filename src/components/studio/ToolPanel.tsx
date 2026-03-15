@@ -4,7 +4,7 @@
 
 import { MousePointer2, Scissors, PenTool, Type, Layers } from 'lucide-react';
 import { useStudioStore, type CraftTool } from '@/stores/studioStore';
-import { MACHINE_PROFILES, getMachineProfile } from '@/services/machineProfiles';
+import { getMachineProfile } from '@/services/machineProfiles';
 
 const TOOLS: { id: CraftTool; label: string; icon: React.ReactNode }[] = [
   { id: 'select', label: 'Select', icon: <MousePointer2 size={18} /> },
@@ -65,6 +65,7 @@ export function ToolPanel() {
             value={embossDepth}
             onChange={(e) => setEmbossDepth(parseFloat(e.target.value))}
             style={{ width: '100%' }}
+            aria-label="Emboss depth in millimeters"
           />
         </div>
       )}

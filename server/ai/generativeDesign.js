@@ -17,9 +17,8 @@ export async function generateDesign({ prompt, productCategory, style }) {
     return null;
   }
 
-  const categoryHint = productCategory
-    ? { signs: 'logo or sign artwork', apparel: 'print or embroidery design', crafts: 'engraving or laser-cut design', gift: 'gift or keepsake artwork' }[String(productCategory).toLowerCase()]
-    || 'custom product artwork';
+  const categoryMap = { signs: 'logo or sign artwork', apparel: 'print or embroidery design', crafts: 'engraving or laser-cut design', gift: 'gift or keepsake artwork' };
+  const categoryHint = (productCategory && categoryMap[String(productCategory).toLowerCase()]) || 'custom product artwork';
   const enhancedPrompt = [
     `Professional design concept for ${categoryHint}: ${prompt}`,
     style ? `Style: ${style}.` : '',

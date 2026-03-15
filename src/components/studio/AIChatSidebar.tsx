@@ -3,7 +3,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { MessageSquare, Sparkles } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { useStudioStore } from '@/stores/studioStore';
 import { API_BASE } from '@/config';
 

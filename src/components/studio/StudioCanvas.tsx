@@ -1,12 +1,14 @@
 /**
  * Central canvas — 2D vector / 3D preview with mode toggle.
+ * AR and 3D views are lazy-loaded for performance.
  */
 
-import { Suspense } from 'react';
+import { Suspense, lazy } from 'react';
 import { useStudioStore } from '@/stores/studioStore';
-import ThreeDProductPreview from '@/components/ThreeDProductPreview';
 import { VectorCanvas2D } from './VectorCanvas2D';
-import { ARPreview } from './ARPreview';
+
+const ThreeDProductPreview = lazy(() => import('@/components/ThreeDProductPreview').then((m) => ({ default: m.default })));
+const ARPreview = lazy(() => import('./ARPreview').then((m) => ({ default: m.ARPreview })));
 
 export function StudioCanvas() {
   const { canvasMode, material, darkMode } = useStudioStore();
@@ -20,7 +22,7 @@ export function StudioCanvas() {
 
   if (canvasMode === '2d') {
     return (
-      <div style={{ width: '100%', height: '100%', minHeight: 400 }}>
+      <div style={{ width: '100%', height: '100%', minHeight: 400 }} role="region" aria-label="2D vector canvas">
         <VectorCanvas2D />
       </div>
     );
@@ -28,7 +30,7 @@ export function StudioCanvas() {
 
   if (canvasMode === '3d') {
     return (
-      <div style={{ width: '100%', height: '100%', minHeight: 400, background: 'var(--bg-color)', borderRadius: 12, overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: '100%', minHeight: 400, background: 'var(--bg-color)', borderRadius: 12, overflow: 'hidden' }} role="region" aria-label="3D preview">
         <Suspense
           fallback={
             <div style={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -48,8 +50,16 @@ export function StudioCanvas() {
   }
 
   return (
-    <div style={{ width: '100%', height: '100%', minHeight: 400 }}>
-      <ARPreview />
+    <div style={{ width: '100%', height: '100%', minHeight: 400 }} role="region" aria-label="AR preview">
+      <Suspense
+        fallback={
+          <div style={{ width: '100%', height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-elevated)' }}>
+            <div style={{ width: 40, height: 40, border: '3px solid var(--border-color)', borderTopColor: 'var(--accent-neon-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          </div>
+        }
+      >
+        <ARPreview />
+      </Suspense>
     </div>
   );
 }
