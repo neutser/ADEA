@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, Save, Share2, MessageSquare, History, Undo, Redo, Check, Upload, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { PageMeta } from '@/components/PageMeta';
 import {
   type MarketplaceProduct, type SchemaField,
@@ -25,13 +24,11 @@ export default function AIStudioConfigurator() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [product, setProduct] = useState<MarketplaceProduct | null>(null);
-  const [products, setProducts] = useState<MarketplaceProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Core configuration
   const [config, setConfig] = useState<Record<string, any>>({});
   const [quantity, setQuantity] = useState(1);
-  const [activeSurface, setActiveSurface] = useState(0);
   
   // Versions / History state
   const [history, setHistory] = useState<any[]>([{}]);
@@ -46,7 +43,6 @@ export default function AIStudioConfigurator() {
     fetch(`${API}/api/products`)
       .then(r => r.json())
       .then(data => {
-        setProducts(data.products || []);
         const shareToken = params.get('share');
         const pid = params.get('product');
         if (shareToken) {

@@ -4,8 +4,7 @@ import { motion } from 'framer-motion';
 import { mainSections } from '@/data/navigation';
 import HomeMiniConfigurator from '@/components/HomeMiniConfigurator';
 
-const fadeUp = { initial: { opacity: 0, y: 32 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } };
-const stagger = (i: number) => ({ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] });
+const stagger = (i: number) => ({ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] as any });
 const viewport = { once: true, margin: '-60px' };
 
 const Home: React.FC = () => {
@@ -36,7 +35,7 @@ const Home: React.FC = () => {
             style={{ marginBottom: '24px' }}
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] as any }}
           >
             Design Your Custom Products and<br />
             <span className="text-gradient-accent neon-text-blue">See Them Before You Buy</span>

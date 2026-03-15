@@ -58,6 +58,8 @@ export default function DesignFlow() {
 
   const handleProductSelect = (product: { id: string; slug?: string }) => {
     const productId = product.id || product.slug;
+    if (!productId) return;
+    
     if (SCENE_CAPABLE_PRODUCTS.includes(productId)) {
       navigate(`/ai-builder?product=${productId}`);
     } else {

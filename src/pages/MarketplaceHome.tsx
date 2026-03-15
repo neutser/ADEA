@@ -44,7 +44,7 @@ const MarketplaceHome = () => {
         setSuites(suiteData?.suites || []);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setFetchError('Could not load products. Ensure the server is running (npm run server).');
         setProducts([]);
         setSuites([]);
