@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Search, Share2, Mail, Gift, Factory, Zap, Box, FileText, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Search, Share2, Mail, Gift, Factory, Zap, Box, FileText, MessageSquare, Package } from 'lucide-react';
 
 const CRMLayout: React.FC = () => {
   const crmItems = [
@@ -14,6 +14,7 @@ const CRMLayout: React.FC = () => {
   ];
 
   const productionItems = [
+    { name: 'Products', path: '/admin/products', icon: <Package size={20} /> },
     { name: 'Production Pipeline', path: '/admin/pipeline-workflow', icon: <Factory size={20} /> },
     { name: 'Machine Queue', path: '/admin/machine-queue', icon: <Zap size={20} /> },
     { name: 'Inventory', path: '/admin/inventory', icon: <Box size={20} /> },

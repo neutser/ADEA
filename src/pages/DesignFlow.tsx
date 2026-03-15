@@ -15,7 +15,7 @@ const CATEGORY_META: Record<string, { icon: React.ReactNode; label: string; colo
   stationery: { icon: <FileText size={24} />, label: 'Stationery', color: '#4ecdc4' },
 };
 
-const SCENE_CAPABLE_PRODUCTS = ['sign-3d-logo', 'mock-sign-1'];
+const SCENE_CAPABLE_PRODUCTS: string[] = [];
 
 export default function DesignFlow() {
   const [params] = useSearchParams();
@@ -59,12 +59,9 @@ export default function DesignFlow() {
   const handleProductSelect = (product: { id: string; slug?: string }) => {
     const productId = product.id || product.slug;
     if (!productId) return;
-    
-    if (SCENE_CAPABLE_PRODUCTS.includes(productId)) {
-      navigate(`/ai-builder?product=${productId}`);
-    } else {
-      navigate(`/marketplace/configure?product=${productId}`);
-    }
+
+    const mode = SCENE_CAPABLE_PRODUCTS.includes(productId) ? '&mode=scene' : '';
+    navigate(`/marketplace/configure?product=${productId}${mode}`);
   };
 
   return (

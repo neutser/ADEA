@@ -1,8 +1,9 @@
-import { ArrowRight, Star, CheckCircle, Sparkles, Image, Building2 } from 'lucide-react';
+import { ArrowRight, Star, CheckCircle, Sparkles, Image } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { mainSections } from '@/data/navigation';
 import HomeMiniConfigurator from '@/components/HomeMiniConfigurator';
+import { Hero2D } from '@/components/Hero2D';
 
 const stagger = (i: number) => ({ delay: i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] as any });
 const viewport = { once: true, margin: '-60px' };
@@ -10,63 +11,12 @@ const viewport = { once: true, margin: '-60px' };
 const Home: React.FC = () => {
   return (
     <div className="home-page">
-      {/* Hero Section – Animated entrance */}
-      <section className="hero section" style={{
-        position: 'relative',
-        minHeight: '90vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, rgba(10,10,10,0.85) 0%, rgba(10,10,20,0.9) 50%, rgba(10,10,10,0.85) 100%), url("https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80") center/cover no-repeat',
-        textAlign: 'center',
-        overflow: 'hidden',
-      }}>
-        {/* Subtle animated overlay */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, transparent 0%, rgba(0,240,255,0.03) 50%, transparent 100%)',
-          pointerEvents: 'none',
-          animation: 'subtlePulse 6s ease-in-out infinite',
-        }} />
-        <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          <motion.h1
-            className="heading-xl"
-            style={{ marginBottom: '24px' }}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] as any }}
-          >
-            Design Your Custom Products and<br />
-            <span className="text-gradient-accent neon-text-blue">See Them Before You Buy</span>
-          </motion.h1>
-          <motion.p
-            className="text-lg"
-            style={{ color: 'var(--text-secondary)', maxWidth: '720px', margin: '0 auto 40px' }}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-          >
-            Upload your logo or photo and preview signs, gifts, and apparel in real environments. No surprises—just confidence.
-          </motion.p>
-          <motion.div
-            style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.5 }}
-          >
-            <Link to="/design" className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '1.05rem', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              Start Designing
-            </Link>
-            <Link to="/ai-builder" className="btn btn-outline" style={{ padding: '16px 28px', fontSize: '1.05rem', display: 'inline-flex', alignItems: 'center', gap: 8, borderColor: 'var(--accent-neon-blue)', color: 'var(--accent-neon-blue)' }}>
-              <Building2 size={20} /> Upload Your Building Photo
-            </Link>
-            <Link to="/shop" className="btn btn-outline" style={{ padding: '16px 28px', fontSize: '1.05rem' }}>
-              Browse Products
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      {/* 2D Hero (3D disabled) */}
+      <Hero2D onEngraveName={(name) => {
+        if (name.trim()) {
+          sessionStorage.setItem('adea-hero-engrave-name', name);
+        }
+      }} />
 
       {/* Interactive AI Demo Section */}
       <section className="section bg-surface">
@@ -86,14 +36,14 @@ const Home: React.FC = () => {
         <div className="container">
           <motion.div style={{ textAlign: 'center', marginBottom: '60px' }} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport} transition={{ duration: 0.5 }}>
             <h2 className="heading-lg" style={{ marginBottom: '16px' }}>Explore Our Catalog</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>120+ custom products across 8 categories. Design, personalize, and order.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>37 customizable craft products across 4 categories. Design, personalize, and order.</p>
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
             {[
-              { title: 'Business Signs', desc: '3D logos, LED signs, office signage', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&q=80', link: '/shop/business-signs', count: 20 },
-              { title: 'Personalized Gifts', desc: 'Keychains, coasters, custom gifts', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80', link: '/shop/personalized-gifts', count: 15 },
-              { title: 'Clothing & Uniforms', desc: 'Embroidery, DTF, uniforms', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&q=80', link: '/shop/clothing-apparel', count: 15 },
-              { title: 'Wedding & Events', desc: 'Welcome signs, favors, seating', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80', link: '/shop/wedding', count: 15 },
+              { title: 'Crafts', desc: 'Keychains, coasters, pet tags, wedding favors', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80', link: '/shop/crafts', count: 11 },
+              { title: 'Gifts', desc: 'Tumblers, cutting boards, champagne flutes', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80', link: '/shop/gifts', count: 14 },
+              { title: 'Signs', desc: 'Logo signs, door plates, desk wedges', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&q=80', link: '/shop/signs', count: 7 },
+              { title: 'Stationery', desc: 'Notebooks, stamps, name plates', img: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=600&q=80', link: '/shop/stationery', count: 6 },
             ].map((cat, i) => (
               <motion.div
                 key={i}
@@ -121,7 +71,7 @@ const Home: React.FC = () => {
             ))}
           </div>
           <motion.div style={{ textAlign: 'center', marginTop: '40px' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={viewport}>
-            <Link to="/shop" className="btn btn-outline">View All 8 Categories</Link>
+            <Link to="/shop" className="btn btn-outline">View All Categories</Link>
           </motion.div>
         </div>
       </section>
@@ -131,7 +81,7 @@ const Home: React.FC = () => {
         <div className="container">
           <motion.div style={{ textAlign: 'center', marginBottom: '48px' }} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport} transition={{ duration: 0.5 }}>
             <h2 className="heading-lg" style={{ marginBottom: '16px' }}>Explore by Category</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>120 products: business signs, gifts, wedding, apparel, home decor, pets, events</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Explore signs, gifts, wedding, apparel, home decor, pets, and events</p>
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             {mainSections.map((s, i) => (
@@ -154,8 +104,8 @@ const Home: React.FC = () => {
             ))}
           </div>
           <motion.div style={{ textAlign: 'center', marginTop: '40px' }} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={viewport}>
-            <Link to="/ai-builder" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Sparkles size={18} /> Try AI Builder – Preview in Your Space
+            <Link to="/marketplace/configure?product=craft-keychain" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <Sparkles size={18} /> Try Crafting Studio
             </Link>
           </motion.div>
         </div>
@@ -205,10 +155,10 @@ const Home: React.FC = () => {
           </motion.div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
             {[
-              { title: 'Restaurant Logo Sign', img: 'https://images.unsplash.com/photo-1556740714-a8395b3bf30f?w=600&q=80', link: '/shop/business-signs' },
-              { title: 'Office Reception Sign', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&q=80', link: '/shop/business-signs' },
-              { title: 'Custom Wedding Sign', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80', link: '/shop/wedding' },
-              { title: 'Embroidered Uniforms', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=600&q=80', link: '/shop/clothing-apparel' },
+              { title: 'Custom Sign', img: 'https://images.unsplash.com/photo-1556740714-a8395b3bf30f?w=600&q=80', link: '/shop/signs' },
+              { title: 'Door Sign', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=600&q=80', link: '/shop/signs' },
+              { title: 'Welcome Sign', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&q=80', link: '/shop/signs' },
+              { title: 'Engraved Keychain', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=600&q=80', link: '/shop/crafts' },
             ].map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={viewport} transition={stagger(i)}>
                 <Link to={item.link} className="card glass-panel" style={{ padding: 0, overflow: 'hidden', textDecoration: 'none' }}>
@@ -256,8 +206,8 @@ const Home: React.FC = () => {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.7, marginBottom: '24px' }}>
                   Upload a photo of your building or room and preview your sign instantly. Our AI helps you place it, scale it, and compare materials—so you know exactly what you&apos;re getting.
                 </p>
-                <Link to="/ai-builder" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                  <Sparkles size={20} /> Try AI Builder
+                <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <Sparkles size={20} /> Try Crafting Studio
                 </Link>
               </div>
               <motion.div
@@ -360,7 +310,7 @@ const Home: React.FC = () => {
               <Link to="/design" className="btn btn-primary" style={{ padding: '16px 32px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={20} /> Start Designing
               </Link>
-              <Link to="/ai-builder" className="btn btn-outline" style={{ padding: '16px 32px' }}>AI Builder</Link>
+              <Link to="/marketplace/configure?product=craft-sign" className="btn btn-outline" style={{ padding: '16px 32px' }}>Crafting Studio</Link>
               <Link to="/shop" className="btn btn-outline" style={{ padding: '16px 32px' }}>Browse Shop</Link>
             </div>
           </motion.div>

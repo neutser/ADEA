@@ -3,7 +3,8 @@
  * Calls OpenAI Vision when API key is set; returns structured recommendations.
  */
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY;
+// Server-side only — never use VITE_* (client-exposed)
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 export async function analyzeScene(imageDataUrl) {
   if (!imageDataUrl?.startsWith('data:')) {

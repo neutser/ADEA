@@ -65,7 +65,7 @@ const LocalSeoLanding: React.FC = () => {
             {pageData.desc} Fast local production and targeted branding solutions.
           </p>
           <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
-            <Link to="/marketplace/configure" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.1rem' }}>
+            <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.1rem' }}>
               Design Your Sign Online
             </Link>
           </div>

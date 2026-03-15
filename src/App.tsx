@@ -3,7 +3,13 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 function ConfigureRedirect() {
   const { search } = useLocation();
-  return <Navigate to={`/marketplace/configure${search}`} replace />;
+  const withDefaultProduct = search.includes('product=') ? search : `${search ? `${search}&` : '?'}product=craft-keychain`;
+  return <Navigate to={`/marketplace/configure${withDefaultProduct}`} replace />;
+}
+function StudioRedirect() {
+  const { search } = useLocation();
+  const withDefaultProduct = search.includes('product=') ? search : `${search ? `${search}&` : '?'}product=craft-keychain`;
+  return <Navigate to={`/marketplace/configure${withDefaultProduct}`} replace />;
 }
 import { PageMeta } from '@/components/PageMeta';
 import Navbar from '@/components/Navbar';
@@ -31,7 +37,6 @@ import LocalSeoLanding from '@/pages/LocalSeoLanding';
 import CraftsHome from '@/pages/Crafts/CraftsHome';
 import CraftProduction from '@/pages/Crafts/CraftProduction';
 import ApparelHome from '@/pages/Apparel/ApparelHome';
-import Studio from '@/pages/Studio';
 import BusinessSigns from '@/pages/BusinessSigns';
 import BusinessSignSubPage from '@/pages/BusinessSignSubPage';
 import PersonalizedGifts from '@/pages/PersonalizedGifts';
@@ -39,19 +44,18 @@ import WeddingEvent from '@/pages/WeddingEvent';
 import HomeDecor from '@/pages/HomeDecor';
 import PetProducts from '@/pages/PetProducts';
 import CorporateGifts from '@/pages/CorporateGifts';
-import AIBuilder from '@/pages/AIBuilder';
 import DesignWizard from '@/pages/DesignWizard';
 import DesignFlow from '@/pages/DesignFlow';
 import CaseStudies from '@/pages/CaseStudies';
 import Blog from '@/pages/Blog';
 import MarketplaceHome from '@/pages/MarketplaceHome';
 import DynamicConfigurator from '@/pages/DynamicConfigurator';
+import CustomizationStudio from '@/pages/CustomizationStudio';
 import CreatorStorefronts from '@/pages/Marketplace/CreatorStorefronts';
 import StorefrontDetailPage from '@/pages/Marketplace/StorefrontDetail';
 import AssetLibrary from '@/pages/Marketplace/AssetLibrary';
 import FavoritesPage from '@/pages/Marketplace/FavoritesPage';
 import SuiteDetailPage from '@/pages/Marketplace/SuiteDetail';
-import CraftingStudio from '@/pages/CraftingStudio';
 
 // Lazy-load admin routes for smaller initial bundle
 const CRMLayout = lazy(() => import('@/components/CRMLayout'));
@@ -66,6 +70,8 @@ const MachineQueue = lazy(() => import('@/pages/Production/MachineQueue'));
 const InventorySystem = lazy(() => import('@/pages/Production/InventorySystem'));
 const FileGenerator = lazy(() => import('@/pages/Production/FileGenerator'));
 const QuoteManagement = lazy(() => import('@/pages/Admin/QuoteManagement'));
+const ProductListPage = lazy(() => import('@/pages/Admin/ProductListPage'));
+const ProductBuilderPage = lazy(() => import('@/pages/Admin/ProductBuilderPage'));
 const ClientDashboard = lazy(() => import('@/pages/Client/ClientDashboard'));
 
 function AdminFallback() {
@@ -120,17 +126,19 @@ function App() {
                   <Route path="/decor" element={<HomeDecor />} />
                   <Route path="/pets" element={<PetProducts />} />
                   <Route path="/corporate" element={<CorporateGifts />} />
-                  <Route path="/ai-builder" element={<AIBuilder />} />
+                  <Route path="/stationery" element={<Navigate to="/shop/stationery" replace />} />
+                  <Route path="/ai-builder" element={<StudioRedirect />} />
                   <Route path="/configure" element={<ConfigureRedirect />} />
                   <Route path="/marketplace" element={<MarketplaceHome />} />
                   <Route path="/marketplace/configure" element={<DynamicConfigurator />} />
+                  <Route path="/marketplace/design-studio" element={<CustomizationStudio />} />
                   <Route path="/marketplace/storefronts" element={<CreatorStorefronts />} />
                   <Route path="/marketplace/storefronts/:slug" element={<StorefrontDetailPage />} />
                   <Route path="/marketplace/assets" element={<AssetLibrary />} />
                   <Route path="/marketplace/favorites" element={<FavoritesPage />} />
                   <Route path="/marketplace/suites/:id" element={<SuiteDetailPage />} />
-                  <Route path="/crafts/configurator" element={<Navigate to="/marketplace/configure?product=keychain-custom" replace />} />
-                  <Route path="/apparel/configurator" element={<Navigate to="/marketplace/configure?product=apparel-polo" replace />} />
+                  <Route path="/crafts/configurator" element={<Navigate to="/marketplace/configure?product=craft-keychain" replace />} />
+                  <Route path="/apparel/configurator" element={<Navigate to="/marketplace/configure?product=craft-mug" replace />} />
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/case-studies" element={<CaseStudies />} />
                   <Route path="/blog" element={<Blog />} />
@@ -162,8 +170,8 @@ function App() {
 
                   <Route path="/apparel" element={<ApparelHome />} />
 
-                  <Route path="/studio" element={<Studio />} />
-                  <Route path="/crafting-studio" element={<CraftingStudio />} />
+                  <Route path="/studio" element={<StudioRedirect />} />
+                  <Route path="/crafting-studio" element={<StudioRedirect />} />
 
                   <Route
                     path="/admin"
@@ -187,6 +195,9 @@ function App() {
                     <Route path="inventory" element={<InventorySystem />} />
                     <Route path="file-generator" element={<FileGenerator />} />
                     <Route path="craft-production" element={<CraftProduction />} />
+                    <Route path="products" element={<ProductListPage />} />
+                    <Route path="products/new" element={<ProductBuilderPage />} />
+                    <Route path="products/:id/edit" element={<ProductBuilderPage />} />
                   </Route>
                 </Routes>
               </main>

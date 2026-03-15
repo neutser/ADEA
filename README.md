@@ -6,7 +6,7 @@ AI-powered custom manufacturing platform. Custom 3D logo signs, laser engraving,
 
 ```bash
 npm install
-cp .env.example .env   # Optional: VITE_API_URL, VITE_OPENAI_API_KEY
+cp .env.example .env   # Required in production: JWT_SECRET, OPENAI_API_KEY
 npm run dev
 ```
 
@@ -24,7 +24,7 @@ npm run dev
 ## Environment Variables
 
 - `VITE_API_URL` – API base URL (backend)
-- `VITE_OPENAI_API_KEY` – OpenAI Vision for AI scene analysis (optional)
+- `OPENAI_API_KEY` – Server-side only. AI design assistant, generative design, scene analysis (optional)
 - `VITE_GEMINI_API_KEY` – Gemini Vision alternative (optional)
 
 ## Platform Modules

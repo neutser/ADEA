@@ -40,12 +40,48 @@ export interface SurfaceZone {
   y: string;
   w: string;
   h: string;
+  /** 3D UV bounds for surface projection [uMin, vMin, uMax, vMax] 0–1 */
+  uvBounds?: [number, number, number, number];
 }
 
 export interface Surface {
   id: string;
   label: string;
   zones?: SurfaceZone[];
+}
+
+/** Real-world dimensions in mm for CAD-like structure */
+export interface ProductDimensions {
+  widthMM: number;
+  heightMM: number;
+  depthMM?: number;
+  /** Default dimensions when config has no size override */
+  defaultWidthMM?: number;
+  defaultHeightMM?: number;
+}
+
+/** Physical component of a product (e.g. face panel, LED strip, base) */
+export interface ProductComponent {
+  id: string;
+  label: string;
+  type: 'panel' | 'frame' | 'led' | 'base' | 'wrap' | 'print-area';
+  /** Dimensions relative to parent or absolute in mm */
+  dimensionsMM?: { w: number; h: number; d?: number };
+  /** Surface IDs this component maps to */
+  surfaceIds?: string[];
+  /** Allowed material IDs (from materials library) */
+  allowedMaterials?: string[];
+}
+
+/** Material constraints per product (manufacturability) */
+export interface MaterialConstraints {
+  /** Allowed material IDs for this product */
+  allowedMaterialIds?: string[];
+  /** Material type restrictions (wood, acrylic, metal, etc.) */
+  allowedTypes?: string[];
+  /** Max thickness in mm per component */
+  maxThicknessMM?: number;
+  minThicknessMM?: number;
 }
 
 export interface PreviewConfig {
@@ -73,6 +109,12 @@ export interface CustomizationSchema {
   fields: SchemaField[];
   preview: PreviewConfig;
   production?: ProductionConstraints;
+  /** Real-world dimensions for CAD-like structure */
+  dimensions?: ProductDimensions;
+  /** Physical components (panels, LED, base, etc.) */
+  components?: ProductComponent[];
+  /** Material constraints for manufacturability */
+  materialConstraints?: MaterialConstraints;
 }
 
 export interface PricingRules {
@@ -165,7 +207,45 @@ export function validateConfig(
     }
   }
 
+  // Material constraints
+  if (schema.materialConstraints?.allowedMaterialIds && config.material) {
+    const allowed = schema.materialConstraints.allowedMaterialIds;
+    const matId = typeof config.material === 'string' ? config.material : config.material?.id;
+    if (matId && !allowed.includes(matId)) {
+      errors.push(`Material "${matId}" is not compatible with this product.`);
+    }
+  }
+
   return { valid: errors.length === 0, errors, warnings };
+}
+
+/** Get first editable zone from schema (for 2D/3D sync) */
+export function getFirstZone(schema: CustomizationSchema): SurfaceZone | null {
+  for (const s of schema.surfaces || []) {
+    const zone = s.zones?.[0];
+    if (zone) return zone;
+  }
+  return null;
+}
+
+/** Parse zone bounds from percentage strings to 0-1 */
+export function parseZoneBounds(zone: SurfaceZone): { x: number; y: number; w: number; h: number } {
+  const pct = (s: string) => Math.max(0, Math.min(1, parseFloat(String(s).replace('%', '')) / 100)) || 0;
+  return { x: pct(zone.x), y: pct(zone.y), w: pct(zone.w), h: pct(zone.h) };
+}
+
+/** Resolve effective dimensions in mm from schema + config */
+export function resolveDimensions(
+  schema: CustomizationSchema,
+  config: Record<string, any>
+): { widthMM: number; heightMM: number; depthMM: number } {
+  const dims = schema.dimensions;
+  const widthCM = config.width ?? (dims?.defaultWidthMM ? dims.defaultWidthMM / 10 : 60);
+  const heightCM = config.height ?? (dims?.defaultHeightMM ? dims.defaultHeightMM / 10 : 30);
+  const w = (typeof widthCM === 'number' ? widthCM : 60) * 10;
+  const h = (typeof heightCM === 'number' ? heightCM : 30) * 10;
+  const d = dims?.depthMM ?? 5;
+  return { widthMM: w, heightMM: h, depthMM: d };
 }
 
 /* ═══ PRICING ══════════════════════════════════════════════ */
@@ -227,6 +307,9 @@ export function buildDefaults(schema: CustomizationSchema): Record<string, any> 
     } else if (field.type === 'checkbox') {
       config[field.id] = false;
     }
+  }
+  if (getFirstZone(schema)) {
+    config.zonePlacement = config.zonePlacement ?? { x: 0.5, y: 0.5, scale: 1 };
   }
   return config;
 }

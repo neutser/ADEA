@@ -13,9 +13,9 @@ export interface SceneAnalysisResult {
 
 /** Canonical backend product IDs (unified with marketplace) */
 export const FALLBACK_RECOMMENDATIONS: { product: string; productId: string; reason: string; defaultConfig?: Record<string, unknown> }[] = [
-  { product: '3D Company Logo Sign', productId: 'sign-3d-logo', reason: 'Suitable for interior branding' },
-  { product: 'LED Acrylic Sign', productId: 'sign-3d-logo', reason: 'Illuminated sign for visibility', defaultConfig: { led: 'warm' } },
-  { product: 'Acrylic Door Plaque', productId: 'sign-3d-logo', reason: 'Professional door or entry signage', defaultConfig: { width: 35 } },
+  { product: 'Custom Sign', productId: 'craft-sign', reason: 'Suitable for interior branding' },
+  { product: 'Door Sign', productId: 'craft-door', reason: 'Professional door or entry signage' },
+  { product: 'Welcome Sign', productId: 'craft-welcome', reason: 'Welcome signage for events or offices' },
 ];
 
 import { API_BASE } from '@/config';
@@ -86,7 +86,7 @@ export function getRecommendationsFromAnalysis(result: SceneAnalysisResult): { p
   if (types.length === 0) return FALLBACK_RECOMMENDATIONS;
   return types.map((id) => {
     const product = PRODUCT_DISPLAY_NAMES[id] ?? id;
-    const productId = AI_PRODUCT_TO_CONFIGURATOR_ID[product] ?? 'sign-3d-logo';
+    const productId = AI_PRODUCT_TO_CONFIGURATOR_ID[product] ?? 'craft-sign';
     const fallback = FALLBACK_RECOMMENDATIONS.find(r => r.product === product);
     return {
       product,

@@ -58,7 +58,7 @@ export function AIChatSidebar() {
       </h3>
       {fallback ? (
         <div style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-          <p>Add OPENAI_API_KEY to enable AI. Tips:</p>
+          <p>Set OPENAI_API_KEY on the server to enable AI. Tips:</p>
           <ul style={{ marginTop: 8, paddingLeft: 20 }}>
             <li>Curio 2: Use emboss for leather, cut for cardstock.</li>
             <li>xTool: 3mm acrylic cuts at ~15mm/s, engraves at 3000mm/min.</li>

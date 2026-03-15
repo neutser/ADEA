@@ -60,7 +60,7 @@ function generateEmbroideryDSTPlaceholder(config) {
   };
 }
 
-/** Sign cut file — SVG for laser/CNC */
+/** Sign cut file — SVG for laser/CNC. Embeds logo/artwork when provided. */
 function generateSignSVG(config) {
   const text = config.text || config.title || 'SAMPLE';
   const subtext = config.subtext || config.date || '';
@@ -69,15 +69,27 @@ function generateSignSVG(config) {
   const h = (config.heightCm || widthCm * 0.5) * 10;
   const r = config.shape === 'rounded' || config.shape === 'rounded-rect' ? 12 : 0;
   const slug = String(text).replace(/\s+/g, '_').slice(0, 20).toLowerCase() || 'design';
+  const logoUrl = config.logo || config.artwork || config.photo;
+  const zp = config.zonePlacement || { x: 0.5, y: 0.5, scale: 1 };
+  const imgW = w * 0.7 * zp.scale;
+  const imgH = h * 0.6 * zp.scale;
+  const imgX = w * 0.15 + (w * 0.7) * zp.x - imgW / 2;
+  const imgY = h * 0.15 + (h * 0.7) * zp.y - imgH / 2;
+  let contentEls = [];
+  if (logoUrl && typeof logoUrl === 'string' && (logoUrl.startsWith('data:') || logoUrl.startsWith('http'))) {
+    contentEls.push('  <image href="' + escapeXml(logoUrl) + '" x="' + Math.max(0, imgX) + '" y="' + Math.max(0, imgY) + '" width="' + imgW + '" height="' + imgH + '" preserveAspectRatio="xMidYMid meet"/>');
+  } else {
+    contentEls.push('  <text x="' + (w / 2) + '" y="' + (h / 2 - 2) + '" class="text" text-anchor="middle">' + escapeXml(text) + '</text>');
+    if (subtext) contentEls.push('  <text x="' + (w / 2) + '" y="' + (h / 2 + 8) + '" class="text" text-anchor="middle" font-size="' + Math.max(2, w / 12) + 'mm">' + escapeXml(subtext) + '</text>');
+  }
   const svg = [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + 'mm" height="' + h + 'mm">',
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + 'mm" height="' + h + 'mm">',
     '  <defs><style>.text { font-family: sans-serif; font-size: ' + Math.max(3, w / 8) + 'mm; fill: #000; }</style></defs>',
     '  <rect x="0" y="0" width="' + w + '" height="' + h + '" rx="' + r + '" ry="' + r + '" fill="none" stroke="#000" stroke-width="0.5"/>',
-    '  <text x="' + (w / 2) + '" y="' + (h / 2 - 2) + '" class="text" text-anchor="middle">' + escapeXml(text) + '</text>',
-    subtext ? '  <text x="' + (w / 2) + '" y="' + (h / 2 + 8) + '" class="text" text-anchor="middle" font-size="' + Math.max(2, w / 12) + 'mm">' + escapeXml(subtext) + '</text>' : '',
+    ...contentEls,
     '</svg>',
-  ].filter(Boolean).join('\n');
+  ].join('\n');
   return { name: slug + '_cut.svg', content: svg };
 }
 
@@ -141,6 +153,57 @@ function generateStickerSVG(config) {
 
 const DEFAULT_PRODUCTION = { bedSizeMM: [1200, 900], maxPanelCM: 120, autoSplit: true };
 
+/** Layer-based design (config_version 2) — generate SVG from layers */
+function generateLayerBasedSVG(config) {
+  const layers = config.layers || [];
+  const zoneBounds = config.zoneBounds || { main: { x: 0.1, y: 0.1, w: 0.8, h: 0.8 } };
+  const zone = zoneBounds.main || zoneBounds[Object.keys(zoneBounds)[0]] || { x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
+  const w = 80;
+  const h = 50;
+  const zx = zone.x * w;
+  const zy = zone.y * h;
+  const zw = zone.w * w;
+  const zh = zone.h * h;
+  const els = [];
+  for (const layer of layers) {
+    if (!layer.visible) continue;
+    const o = layer.fabricJson || {};
+    const left = (o.left ?? 0) + zx;
+    const top = (o.top ?? 0) + zy;
+    const scaleX = o.scaleX ?? 1;
+    const scaleY = o.scaleY ?? 1;
+    if (o.type === 'text' || o.type === 'i-text') {
+      const text = (o.text ?? '').replace(/\n/g, ' ');
+      const fontSize = (o.fontSize ?? 24) * scaleX;
+      const fontFamily = o.fontFamily || 'sans-serif';
+      els.push(`  <text x="${left}" y="${top + fontSize}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" fill="${o.fill || '#000'}">${escapeXml(text)}</text>`);
+    } else if (o.type === 'image' && o.src) {
+      const ow = (o.width ?? 100) * scaleX;
+      const oh = (o.height ?? 100) * scaleY;
+      els.push(`  <image href="${escapeXml(o.src)}" x="${left}" y="${top}" width="${ow}" height="${oh}" preserveAspectRatio="xMidYMid meet"/>`);
+    } else if (o.type === 'rect') {
+      const rw = (o.width ?? 50) * scaleX;
+      const rh = (o.height ?? 50) * scaleY;
+      els.push(`  <rect x="${left}" y="${top}" width="${rw}" height="${rh}" fill="${o.fill || '#000'}" stroke="${o.stroke || 'none'}"/>`);
+    } else if (o.type === 'circle') {
+      const r = (o.radius ?? 25) * scaleX;
+      els.push(`  <circle cx="${left + r}" cy="${top + r}" r="${r}" fill="${o.fill || '#000'}" stroke="${o.stroke || 'none'}"/>`);
+    } else if (o.type === 'ellipse') {
+      const rx = (o.rx ?? 40) * scaleX;
+      const ry = (o.ry ?? 25) * scaleY;
+      els.push(`  <ellipse cx="${left + rx}" cy="${top + ry}" rx="${rx}" ry="${ry}" fill="${o.fill || '#000'}" stroke="${o.stroke || 'none'}"/>`);
+    }
+  }
+  const svg = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="' + w + 'mm" height="' + h + 'mm">',
+    '  <rect x="0" y="0" width="' + w + '" height="' + h + '" fill="none" stroke="#000" stroke-width="0.5"/>',
+    ...els,
+    '</svg>',
+  ].join('\n');
+  return { name: 'design_export.svg', content: svg };
+}
+
 /**
  * Generate production file(s). Returns array of { name, content }.
  * For large signs, may return multiple panel files.
@@ -151,6 +214,11 @@ const DEFAULT_PRODUCTION = { bedSizeMM: [1200, 900], maxPanelCM: 120, autoSplit:
  * @returns {{ files: Array<{ name: string, content: string }>, validation?: object }}
  */
 export function generateProductionFile(productId, config, schema, format = 'all') {
+  if (config?.config_version === 2 && Array.isArray(config?.layers)) {
+    const f = generateLayerBasedSVG(config);
+    return { files: [{ name: f.name, content: f.content }], validation: { valid: true, errors: [], warnings: [] } };
+  }
+
   const production = schema?.production || DEFAULT_PRODUCTION;
   const validation = validateForProduction(productId, config, production);
   if (!validation.valid) {

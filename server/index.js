@@ -19,10 +19,12 @@ import { machineAssistant } from './ai/machineAssistant.js';
 import { runProductSeed } from './runSeed.js';
 import { toCurioLayers } from './machineExport/curioExport.js';
 import { toLightBurnSVG } from './machineExport/xtoolExport.js';
+import { generateMockup } from './mockupGenerator.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'adea-crafts-dev-secret-change-in-production';
+const isProduction = process.env.NODE_ENV === 'production';
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? (() => { throw new Error('JWT_SECRET must be set in production'); })() : 'adea-crafts-dev-secret');
 
 /* ── Security Headers (C4) ─────────────────────────────────── */
 app.use((req, res, next) => {
@@ -59,6 +61,29 @@ function rateLimit(req, res, next) {
   next();
 }
 app.use(rateLimit);
+
+/* ── AI-specific rate limit (stricter, cost control) ─────────── */
+const aiLimitStore = new Map();
+const AI_LIMIT_MAX = 20;
+const AI_LIMIT_WINDOW_MS = 60 * 1000;
+function aiRateLimit(req, res, next) {
+  const key = `ai:${req.ip || req.socket.remoteAddress || 'unknown'}`;
+  const now = Date.now();
+  let entry = aiLimitStore.get(key);
+  if (!entry) {
+    entry = { count: 0, resetAt: now + AI_LIMIT_WINDOW_MS };
+    aiLimitStore.set(key, entry);
+  }
+  if (now > entry.resetAt) {
+    entry.count = 0;
+    entry.resetAt = now + AI_LIMIT_WINDOW_MS;
+  }
+  entry.count++;
+  if (entry.count > AI_LIMIT_MAX) {
+    return res.status(429).json({ error: 'AI rate limit exceeded. Please try again in a minute.', code: 'AI_RATE_LIMIT' });
+  }
+  next();
+}
 
 app.use(cors({
   origin: (origin, cb) => {
@@ -419,6 +444,33 @@ app.get('/api/templates', (req, res) => {
   res.json({ templates: rows.map(r => ({ ...r, config: JSON.parse(r.config_json), tags: r.tags_json ? JSON.parse(r.tags_json) : [] })) });
 });
 
+/* ═══ MOCKUP GENERATOR ═══════════════════════════════════ */
+app.post('/api/mockup/generate', async (req, res) => {
+  const { designId, productId, templateId, format = 'png', width = 600, designImage, productImageUrl } = req.body;
+  const canonicalProductId = resolveProductId(productId) || productId;
+  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(canonicalProductId);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  const heroUrl = productImageUrl || product.hero_image;
+  if (!heroUrl) return res.status(400).json({ error: 'Product has no hero image' });
+  try {
+    const result = await generateMockup({
+      designImage: designImage || null,
+      productImageUrl: heroUrl,
+      format,
+      width: Number(width) || 600,
+    });
+    if (result.buffer) {
+      res.setHeader('Content-Type', `image/${format}`);
+      res.setHeader('Content-Disposition', `inline; filename="mockup.${format}"`);
+      res.send(result.buffer);
+    } else {
+      res.json({ url: result.url });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Mockup generation failed' });
+  }
+});
+
 app.post('/api/templates', authMiddleware, (req, res) => {
   const { productId, name, description, config, category, previewImage, tags, storefrontId } = req.body;
   const id = randomUUID();
@@ -685,8 +737,8 @@ app.post('/api/manufacturing/validate', (req, res) => {
   }
 });
 
-/* ═══ AI ORCHESTRATION ═════════════════════════════════ */
-app.post('/api/ai/analyze-scene', (req, res) => {
+/* ═══ AI ORCHESTRATION (aiRateLimit: 20/min per IP) ═══ */
+app.post('/api/ai/analyze-scene', aiRateLimit, (req, res) => {
   const { imageDataUrl } = req.body;
   if (!imageDataUrl || typeof imageDataUrl !== 'string') {
     return res.status(400).json({ error: 'imageDataUrl required' });
@@ -699,12 +751,12 @@ app.post('/api/ai/analyze-scene', (req, res) => {
     });
 });
 
-app.post('/api/ai/design-assistant', (req, res) => {
-  const { message, productId, productName, config, conversationHistory } = req.body;
+app.post('/api/ai/design-assistant', aiRateLimit, (req, res) => {
+  const { message, productId, productName, productCategory, config, schema, conversationHistory } = req.body;
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'message required' });
   }
-  designAssistant({ message, productId, productName, config, conversationHistory })
+  designAssistant({ message, productId, productName, productCategory, config, schema, conversationHistory })
     .then((result) => {
       if (!result) {
         return res.status(503).json({ error: 'OPENAI_API_KEY not configured', code: 'AI_UNAVAILABLE' });
@@ -717,7 +769,7 @@ app.post('/api/ai/design-assistant', (req, res) => {
     });
 });
 
-app.post('/api/ai/generate-design', (req, res) => {
+app.post('/api/ai/generate-design', aiRateLimit, (req, res) => {
   const { prompt, productCategory, style } = req.body;
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'prompt required' });
@@ -735,7 +787,7 @@ app.post('/api/ai/generate-design', (req, res) => {
     });
 });
 
-app.post('/api/ai/machine-assistant', (req, res) => {
+app.post('/api/ai/machine-assistant', aiRateLimit, (req, res) => {
   const { message, machineId, material, selectedTool, layerCount, conversationHistory } = req.body;
   if (!message || typeof message !== 'string') {
     return res.status(400).json({ error: 'message required' });
@@ -792,6 +844,41 @@ app.post('/api/crafting-studio/export', (req, res) => {
   res.setHeader('Content-Type', mime);
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.send(content);
+});
+
+/** Unified export: svg | dxf | curio | xtool. Preserves zones, scales, material intent. */
+app.post('/api/export/design', (req, res) => {
+  const { productId, config, schema, format = 'svg' } = req.body;
+  const fmt = String(format || 'svg').toLowerCase();
+  const cfg = config || {};
+  try {
+    const hasVectorPaths = cfg.vectorPath || cfg.paths || (cfg.layers?.length && cfg.layers.some((l) => l.paths));
+    if ((fmt === 'curio2' || fmt === 'curio') && hasVectorPaths) {
+      const design = { layers: (cfg.layers || [{ type: 'cut', name: 'design', paths: cfg.vectorPath || cfg.paths || '' }]) };
+      const content = toCurioLayers(design);
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Disposition', 'attachment; filename="design-curio.svg"');
+      return res.send(content);
+    }
+    if ((fmt === 'xtool' || fmt === 'xtool-d1' || fmt === 'xtool-m1') && hasVectorPaths) {
+      const design = { layers: (cfg.layers || [{ type: 'cut', name: 'design', paths: cfg.vectorPath || cfg.paths || '' }]) };
+      const content = toLightBurnSVG(design);
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Disposition', 'attachment; filename="design-xtool.svg"');
+      return res.send(content);
+    }
+    const result = generateProductionFile(productId || 'craft-sign', cfg, schema, fmt === 'dxf' ? 'dxf' : 'svg');
+    const files = result.files || [];
+    if (files.length === 0) return res.status(400).json({ error: 'No files generated' });
+    const f = files[0];
+    const mime = f.name.endsWith('.dxf') ? 'application/dxf' : 'image/svg+xml';
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Content-Disposition', `attachment; filename="${f.name}"`);
+    res.send(f.content);
+  } catch (err) {
+    console.error('Export error:', err);
+    res.status(500).json({ error: err.message || 'Export failed' });
+  }
 });
 
 /* ═══ HEALTH ═══════════════════════════════════════════════ */

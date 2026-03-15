@@ -24,10 +24,10 @@ const Footer: React.FC = () => {
           <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}>
             <h4 style={{ marginBottom: '20px', fontSize: '1.25rem' }}>Products</h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {['/shop/business-signs', '/shop/personalized-gifts', '/shop/clothing-apparel', '/shop/home-decor', '/shop/wedding'].map((to, i) => (
+              {['/shop/crafts', '/shop/gifts', '/shop/signs', '/shop/stationery'].map((to, i) => (
                 <li key={to}>
                   <Link to={to} style={{ color: 'var(--text-secondary)', transition: 'color 0.2s' }}>
-                    <motion.span style={{ display: 'inline-block' }} whileHover={{ x: 4, color: 'var(--accent-neon-blue)' }}>{['Business Signs', 'Personalized Gifts', 'Clothing & Uniforms', 'Home Decor', 'Wedding & Events'][i]}</motion.span>
+                    <motion.span style={{ display: 'inline-block' }} whileHover={{ x: 4, color: 'var(--accent-neon-blue)' }}>{['Crafts', 'Gifts', 'Signs', 'Stationery'][i]}</motion.span>
                   </Link>
                 </li>
               ))}
@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
             <h4 style={{ marginBottom: '20px', fontSize: '1.25rem' }}>Company</h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { to: '/ai-builder', label: 'AI Builder' },
+                { to: '/marketplace/configure?product=craft-sign&mode=scene', label: 'AI Builder' },
                 { to: '/portfolio', label: 'Portfolio' },
                 { to: '/case-studies', label: 'Case Studies' },
                 { to: '/blog', label: 'Blog' },

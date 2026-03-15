@@ -1,8 +1,7 @@
 import { useRef, Suspense, useMemo, useState, useEffect, Component } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, Text3D, Center, Float, ContactShadows, SoftShadows, Decal } from '@react-three/drei';
+import { OrbitControls, Environment, Text3D, Center, Float, ContactShadows, Decal } from '@react-three/drei';
 import * as THREE from 'three';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 interface Props {
   config: any;
@@ -15,16 +14,35 @@ interface Props {
 function SignModelWithLogo({ config, materialFinish }: any) {
   const logoUrl = config?.logo || config?.artwork || config?.photo;
   const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const [decalScale, setDecalScale] = useState<[number, number, number]>([3.4, 2.04, 1]);
   const texRef = useRef<THREE.Texture | null>(null);
   useEffect(() => {
-    if (!logoUrl || !logoUrl.startsWith('data:')) return;
+    if (!logoUrl || typeof logoUrl !== 'string') return;
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.flipY = false;
+      tex.anisotropy = 8;
       tex.needsUpdate = true;
+
+      // Fit uploaded/generated image inside sign face while preserving aspect ratio.
+      const maxW = 3.4;
+      const maxH = 2.04;
+      const ratio = Math.max(0.1, img.width / Math.max(1, img.height));
+      let w = maxW;
+      let h = w / ratio;
+      if (h > maxH) {
+        h = maxH;
+        w = h * ratio;
+      }
+      setDecalScale([w, h, 1]);
       texRef.current = tex;
       setTexture(tex);
+    };
+    img.onerror = () => {
+      setTexture(null);
     };
     img.src = logoUrl;
     return () => {
@@ -39,16 +57,26 @@ function SignModelWithLogo({ config, materialFinish }: any) {
     switch (mat) {
       case 'acrylic_black':
       case 'matte_black':
-        return { color: '#1a1a1a', metalness: 0.3, roughness: 0.8 };
+        return { color: '#1a1a1a', metalness: 0.25, roughness: 0.75, envMapIntensity: 0.4 };
       case 'acrylic_white':
       case 'white':
-        return { color: '#f8f8f8', metalness: 0.1, roughness: 0.5 };
+        return { color: '#f5f5f5', metalness: 0.08, roughness: 0.45, envMapIntensity: 0.6 };
+      case 'metal_brushed':
+        return { color: '#c8c8c8', metalness: 0.92, roughness: 0.35, envMapIntensity: 1.2 };
+      case 'wood_oak':
+        return { color: '#c4a574', metalness: 0, roughness: 0.88, envMapIntensity: 0.3 };
+      case 'acrylic_clear':
+        return { color: '#ffffff', transmission: 0.95, opacity: 1, metalness: 0, roughness: 0.03, ior: 1.49, thickness: 0.5, envMapIntensity: 1 };
       default:
-        return { color: '#ffffff', metalness: 0.1, roughness: 0.2 };
+        return { color: '#ffffff', metalness: 0.12, roughness: 0.25, envMapIntensity: 0.5 };
     }
   }, [config, materialFinish]);
 
   if (!texture) return null;
+  const zp = config?.zonePlacement || { x: 0.5, y: 0.5, scale: 1 };
+  const posX = (zp.x - 0.5) * 2.4;
+  const posY = (zp.y - 0.5) * 1.6;
+  const scaledDecal: [number, number, number] = [decalScale[0] * zp.scale, decalScale[1] * zp.scale, 1];
   const size = 4;
   return (
     <group>
@@ -56,7 +84,7 @@ function SignModelWithLogo({ config, materialFinish }: any) {
         <planeGeometry args={[size, size * 0.6]} />
         <meshStandardMaterial {...materialProps} />
       </mesh>
-      <Decal position={[0, 0, 0.05]} rotation={[0, 0, 0]} scale={[size * 0.9, size * 0.54, 1]} map={texture} />
+      <Decal position={[posX, posY, 0.05]} rotation={[0, 0, 0]} scale={scaledDecal} map={texture} />
     </group>
   );
 }
@@ -64,7 +92,7 @@ function SignModelWithLogo({ config, materialFinish }: any) {
 function SignModel({ config, materialFinish, isNightMode }: any) {
   const textGroupRef = useRef<THREE.Group>(null);
   const logoUrl = config?.logo || config?.artwork || config?.photo;
-  const hasLogo = logoUrl && (typeof logoUrl === 'string' && logoUrl.startsWith('data:'));
+  const hasLogo = logoUrl && typeof logoUrl === 'string';
 
   // When logo is present, use logo-based sign
   if (hasLogo) {
@@ -81,33 +109,34 @@ function SignModel({ config, materialFinish, isNightMode }: any) {
     );
   }
 
-  // Base materials
+  // PBR material presets (photoreal: albedo, roughness, metalness, envMapIntensity)
   const materialProps = useMemo(() => {
-    // Determine material from the main config object rather than arbitrary overrides whenever possible
     const mat = config?.material || materialFinish;
     switch (mat) {
       case 'gold_mirror':
       case 'mirror_gold':
-        return { color: '#d4af37', metalness: 1, roughness: 0.05, envMapIntensity: 2.5 };
+        return { color: '#d4af37', metalness: 1, roughness: 0.04, envMapIntensity: 2.5 };
       case 'silver_mirror':
       case 'mirror_silver':
-        return { color: '#e0e0e0', metalness: 1, roughness: 0.05, envMapIntensity: 2.5 };
+        return { color: '#e8e8e8', metalness: 1, roughness: 0.04, envMapIntensity: 2.5 };
+      case 'metal_brushed':
+        return { color: '#b8b8b8', metalness: 0.95, roughness: 0.3, envMapIntensity: 1.3 };
       case 'clear_acrylic':
       case 'acrylic_clear':
-        return { color: '#ffffff', transmission: 0.95, opacity: 1, metalness: 0, roughness: 0.05, ior: 1.5, thickness: 0.5 };
+        return { color: '#ffffff', transmission: 0.96, opacity: 1, metalness: 0, roughness: 0.02, ior: 1.49, thickness: 0.5, envMapIntensity: 1 };
       case 'acrylic_black':
       case 'matte_black':
-        return { color: '#1a1a1a', metalness: 0.3, roughness: 0.8 };
+        return { color: '#151515', metalness: 0.2, roughness: 0.82, envMapIntensity: 0.35 };
       case 'wood_oak':
       case 'wood':
-        return { color: '#c4a574', metalness: 0, roughness: 0.9 };
+        return { color: '#c4a574', metalness: 0, roughness: 0.88, envMapIntensity: 0.28 };
       case 'wood_walnut':
-        return { color: '#5c4033', metalness: 0, roughness: 0.9 };
+        return { color: '#5c4033', metalness: 0, roughness: 0.9, envMapIntensity: 0.25 };
       case 'acrylic_white':
       case 'white':
-        return { color: '#f8f8f8', metalness: 0.1, roughness: 0.5 };
+        return { color: '#f5f5f5', metalness: 0.06, roughness: 0.48, envMapIntensity: 0.55 };
       default:
-        return { color: '#ffffff', metalness: 0.1, roughness: 0.2 };
+        return { color: '#ffffff', metalness: 0.1, roughness: 0.22, envMapIntensity: 0.5 };
     }
   }, [config, materialFinish]);
 
@@ -428,19 +457,40 @@ function MugModel({ config }: any) {
   const insideColor = config?.inside_color || '#fff';
   const handleColor = config?.handle_color || '#fff';
   const text = config?.text || 'Mug';
-  
+  const photoUrl = config?.photo || config?.artwork || config?.logo;
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const texRef = useRef<THREE.Texture | null>(null);
+  useEffect(() => {
+    if (!photoUrl || typeof photoUrl !== 'string') return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.flipY = false;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      texRef.current = tex;
+      setTexture(tex);
+    };
+    img.onerror = () => setTexture(null);
+    img.src = photoUrl;
+    return () => { texRef.current?.dispose(); texRef.current = null; setTexture(null); };
+  }, [photoUrl]);
+
   return (
     <group rotation={[0.1, 0, 0]}>
-      {/* Mug Body */}
+      {/* Mug Body - PBR ceramic */}
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[1.5, 1.5, 3.5, 64, 1, true]} />
         <meshPhysicalMaterial 
           color="#ffffff" 
           side={THREE.DoubleSide} 
-          roughness={0.05} 
-          metalness={0.2} 
+          roughness={0.04} 
+          metalness={0.15} 
           clearcoat={1}
-          clearcoatRoughness={0.1}
+          clearcoatRoughness={0.08}
+          envMapIntensity={0.6}
         />
       </mesh>
       <mesh receiveShadow position={[0, -1.75, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -458,32 +508,59 @@ function MugModel({ config }: any) {
         <meshStandardMaterial color={insideColor} roughness={0.1} />
       </mesh>
 
-      {/* Real-time Text on Mug */}
-      <Center position={[0, 0, 1.51]}>
-        <Text3D
-          font="/fonts/Inter_Bold.json"
-          size={0.3}
-          height={0.02}
-          curveSegments={12}
-        >
-          {text.slice(0, 15)}
-          <meshStandardMaterial color="#333" roughness={0.2} />
-        </Text3D>
-      </Center>
+      {/* Photo/Artwork wrap decal when provided */}
+      {texture && (
+        <Decal position={[0, 0, 1.51]} rotation={[0, 0, 0]} scale={[2.2, 1.2, 1]} map={texture} />
+      )}
+      {/* Real-time Text on Mug when no photo */}
+      {!texture && (
+        <Center position={[0, 0, 1.51]}>
+          <Text3D
+            font="/fonts/Inter_Bold.json"
+            size={0.3}
+            height={0.02}
+            curveSegments={12}
+          >
+            {text.slice(0, 15)}
+            <meshStandardMaterial color="#333" roughness={0.2} />
+          </Text3D>
+        </Center>
+      )}
     </group>
   );
 }
 
 function KeychainModel({ config }: any) {
   const text = config?.text || 'Key';
+  const photoUrl = config?.photo || config?.artwork || config?.logo;
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const texRef = useRef<THREE.Texture | null>(null);
+  useEffect(() => {
+    if (!photoUrl || typeof photoUrl !== 'string') return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const tex = new THREE.Texture(img);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.flipY = false;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      texRef.current = tex;
+      setTexture(tex);
+    };
+    img.onerror = () => setTexture(null);
+    img.src = photoUrl;
+    return () => { texRef.current?.dispose(); texRef.current = null; setTexture(null); };
+  }, [photoUrl]);
+
   const materialProps = useMemo(() => {
     const mat = config?.material || 'wood';
     switch (mat) {
-      case 'wood': return { color: '#8b5a2b', metalness: 0, roughness: 0.8 };
-      case 'metal_alum': return { color: '#e0e0e0', metalness: 0.9, roughness: 0.1 };
+      case 'wood': return { color: '#8b5a2b', metalness: 0, roughness: 0.82 };
+      case 'metal_alum': return { color: '#d0d0d0', metalness: 0.92, roughness: 0.12, envMapIntensity: 1.1 };
       case 'leather': return { color: '#3d2b1f', metalness: 0, roughness: 0.9 };
-      case 'acrylic_clear': return { color: '#ffffff', transmission: 0.95, opacity: 1, metalness: 0, roughness: 0.05, ior: 1.5, thickness: 0.1 };
-      default: return { color: '#ffffff', metalness: 0.1, roughness: 0.2 };
+      case 'acrylic_clear': return { color: '#ffffff', transmission: 0.95, opacity: 1, metalness: 0, roughness: 0.04, ior: 1.49, thickness: 0.1 };
+      default: return { color: '#ffffff', metalness: 0.1, roughness: 0.22 };
     }
   }, [config?.material]);
 
@@ -503,18 +580,24 @@ function KeychainModel({ config }: any) {
         </mesh>
       </group>
 
-      {/* Real-time Text on Keychain */}
-      <Center position={[0, 0, 0.08]}>
-        <Text3D
-          font="/fonts/Inter_Bold.json"
-          size={0.35}
-          height={0.05}
-          curveSegments={12}
-        >
-          {text.slice(0, 10)}
-          <meshStandardMaterial color={config?.material === 'wood' ? '#3d2b1f' : '#111'} roughness={0.1} />
-        </Text3D>
-      </Center>
+      {/* Photo/Artwork decal when provided */}
+      {texture && (
+        <Decal position={[0, 0, 0.08]} rotation={[0, 0, 0]} scale={[2, 3.2, 1]} map={texture} />
+      )}
+      {/* Real-time Text when no photo */}
+      {!texture && (
+        <Center position={[0, 0, 0.08]}>
+          <Text3D
+            font="/fonts/Inter_Bold.json"
+            size={0.35}
+            height={0.05}
+            curveSegments={12}
+          >
+            {text.slice(0, 10)}
+            <meshStandardMaterial color={config?.material === 'wood' ? '#3d2b1f' : '#111'} roughness={0.1} />
+          </Text3D>
+        </Center>
+      )}
     </group>
   );
 }
@@ -787,23 +870,30 @@ export default function ThreeDProductPreview({ config, productType = 'sign', mat
   return (
     <PreviewErrorBoundary>
       <div style={{ width: '100%', height: '100%', background: isNightMode ? '#050505' : '#111', borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
-        <Canvas shadows camera={{ position: [0, 0, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
-        <SoftShadows size={25} samples={10} focus={0.5} />
-        
+        <Canvas
+          shadows
+          camera={{ position: [0, 0, 10], fov: 40 }}
+          gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
+          dpr={[1, 1.8]}
+        >
         <color attach="background" args={[isNightMode ? '#050505' : '#151515']} />
 
         {isNightMode ? (
           <>
-            <ambientLight intensity={0.15} />
-            <pointLight position={[5, 10, 5]} intensity={1.0} color="#444" />
-            <spotLight position={[-5, 10, 5]} angle={0.25} penumbra={1} intensity={2.5} castShadow />
+            <ambientLight intensity={0.1} />
+            <pointLight position={[5, 7, 5]} intensity={0.6} color="#8a9ab0" />
+            <spotLight position={[-5, 8, 6]} angle={0.3} penumbra={0.85} intensity={2.5} castShadow color="#e8ecf0" />
+            <spotLight position={[4, 6, -3]} angle={0.25} penumbra={0.9} intensity={0.8} color="#6f8ab8" />
+            <Environment preset="city" environmentIntensity={0.38} />
           </>
         ) : (
           <>
-            <ambientLight intensity={0.6} />
-            <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={3} castShadow />
-            <directionalLight position={[-5, 5, -5]} intensity={0.8} />
-            <Environment preset="city" environmentIntensity={materialFinish?.includes('mirror') ? 2.5 : 0.8} />
+            <ambientLight intensity={0.38} />
+            <spotLight position={[7, 9, 7]} angle={0.2} penumbra={0.9} intensity={2.8} castShadow color="#fffef8" />
+            <directionalLight position={[-5, 6, -4]} intensity={0.65} color="#f5f0e8" />
+            <pointLight position={[3, 4, 5]} intensity={0.4} color="#fff8e8" />
+            <pointLight position={[-4, 5, 3]} intensity={0.25} color="#e8f0ff" />
+            <Environment preset="warehouse" environmentIntensity={materialFinish?.includes('mirror') ? 2.6 : 1.05} />
           </>
         ) }
 
@@ -820,16 +910,7 @@ export default function ThreeDProductPreview({ config, productType = 'sign', mat
             <UniversalModel config={config} productType={productType} materialFinish={materialFinish} isNightMode={isNightMode} />
           </Float>
           
-          <ContactShadows position={[0, -3.5, 0]} opacity={0.4} scale={20} blur={2.5} far={4.5} />
-          
-          <EffectComposer>
-            <Bloom 
-              luminanceThreshold={isNightMode ? 0.05 : 0.9} 
-              mipmapBlur 
-              intensity={isNightMode ? 3.0 : 0.4} 
-              radius={0.4}
-            />
-          </EffectComposer>
+          <ContactShadows position={[0, -3.5, 0]} opacity={0.35} scale={18} blur={2.2} far={4.5} />
         </Suspense>
         
         <OrbitControls 

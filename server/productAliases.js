@@ -1,33 +1,49 @@
 /**
  * Product ID aliases — maps legacy product IDs to backend product IDs.
  * Enables unified product source and design migration.
+ * Updated for craft product catalog (2D customizable).
  */
 
 export const PRODUCT_ALIASES = {
-  // Signs (Universal) -> sign-3d-logo (backend)
-  'logo-sign': 'sign-3d-logo',
-  'led-sign': 'sign-3d-logo',
-  'door-sign': 'sign-3d-logo',
-  'menu-board': 'sign-3d-logo',
-  'qr-sign': 'sign-3d-logo',
+  // Signs -> craft-sign
+  'sign-3d-logo': 'craft-sign',
+  'logo-sign': 'craft-sign',
+  'led-sign': 'craft-sign',
+  'door-sign': 'craft-door',
+  'menu-board': 'craft-sign',
+  'qr-sign': 'craft-sign',
+  'welcome-sign': 'craft-welcome',
   // Crafts
-  'keychain': 'keychain-custom',
-  'coaster': 'keychain-custom',
-  'phone-stand': 'keychain-custom',
-  'cake-topper': 'keychain-custom',
-  'pet-tag': 'keychain-custom',
-  'welcome-sign': 'keychain-custom',
-  'bookmark': 'keychain-custom',
-  'ornament': 'keychain-custom',
-  'plaque': 'plaque-award',
-  'stamp': 'keychain-custom',
-  // Apparel
-  'polo': 'apparel-polo',
-  'hoodie': 'apparel-hoodie',
-  'tee': 'apparel-hoodie',
-  'cap': 'apparel-polo',
-  'apron': 'apparel-polo',
-  'tote': 'apparel-hoodie',
+  'keychain': 'craft-keychain',
+  'coaster': 'craft-coaster',
+  'phone-stand': 'craft-keychain',
+  'cake-topper': 'craft-ornament',
+  'pet-tag': 'craft-pet-tag',
+  'bookmark': 'craft-bookmark',
+  'ornament': 'craft-ornament',
+  'plaque': 'craft-plaque',
+  'stamp': 'craft-stamp',
+  // Gifts
+  'mug': 'craft-mug',
+  'pen': 'craft-pen',
+  'box': 'craft-box',
+  'journal': 'craft-journal',
+  'chopping': 'craft-chopping',
+  'tumbler': 'craft-tumbler',
+  'champagne': 'craft-champagne',
+  'wallet': 'craft-wallet',
+  'card-holder': 'craft-card-holder',
+  'teacher': 'craft-teacher',
+  // Stationery
+  'notebook': 'craft-notebook',
+  'nameplate': 'craft-nameplate',
+  'note-holder': 'craft-note-holder',
+  // Signs
+  'desk-wedge': 'craft-desk-wedge',
+  'wall-plaque': 'craft-wall-plaque',
+  // Pet / Wedding
+  'pet-memorial': 'craft-pet-memorial',
+  'wood-slice': 'craft-wood-slice',
 };
 
 /**

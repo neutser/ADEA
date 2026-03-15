@@ -144,7 +144,7 @@ const HomeMiniConfigurator: React.FC = () => {
             </div>
           </div>
 
-          <Link to="/ai-builder" className="btn btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <Sparkles size={18} /> Full AI Builder – Preview in Your Space
           </Link>
         </div>

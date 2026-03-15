@@ -43,18 +43,18 @@ export function getRecommendations(answers: WizardAnswers): DesignSuggestion[] {
   // Storefront / outdoor building photo → outdoor signs
   if (hasSpacePhoto && usageLocation === 'outdoor-building') {
     return [
-      { id: 'outdoor-acrylic', name: 'Outdoor Acrylic Sign', desc: 'Durable, weather-resistant. Perfect for storefronts.', img: 'https://images.unsplash.com/photo-1556740714-a8395b3bf30f?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$199–$800', aiTip: 'For outdoor visibility, we recommend 80–120 cm width.' },
-      { id: 'led-halo', name: 'LED Halo Sign', desc: 'Illuminated for night visibility.', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$349–$900', aiTip: 'LED halo adds premium look and increases visibility after dark.' },
-      { id: 'hours-plaque', name: 'Opening Hours Plaque', desc: 'Complement your main sign.', img: 'https://images.unsplash.com/photo-1556742049-2e852e7e0614?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$69–$149' },
+      { id: 'outdoor-acrylic', name: 'Outdoor Acrylic Sign', desc: 'Durable, weather-resistant. Perfect for storefronts.', img: 'https://images.unsplash.com/photo-1556740714-a8395b3bf30f?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$199–$800', aiTip: 'For outdoor visibility, we recommend 80–120 cm width.' },
+      { id: 'led-halo', name: 'LED Halo Sign', desc: 'Illuminated for night visibility.', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$349–$900', aiTip: 'LED halo adds premium look and increases visibility after dark.' },
+      { id: 'hours-plaque', name: 'Opening Hours Plaque', desc: 'Complement your main sign.', img: 'https://images.unsplash.com/photo-1556742049-2e852e7e0614?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$69–$149' },
     ];
   }
 
   // Logo only → office sign, apparel, keychains
   if (hasLogoUpload && !hasSpacePhoto) {
     const base = [
-      { id: 'office-logo', name: 'Office Logo Sign', desc: '3D layered acrylic for reception or lobby.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$299–$1,200', aiTip: 'For reception walls, 80–120 cm creates strong presence.' },
-      { id: 'embroidered-polo', name: 'Embroidered Polo', desc: 'Premium stitched logo on chest.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=apparel-polo', priceRange: '$32+', aiTip: 'Embroidery works better than print for detailed logos.' },
-      { id: 'logo-keychain', name: 'Logo Keychain', desc: 'Acrylic or wooden with your logo.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=keychain-custom', priceRange: '$8–$15' },
+      { id: 'office-logo', name: 'Office Logo Sign', desc: '3D layered acrylic for reception or lobby.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$299–$1,200', aiTip: 'For reception walls, 80–120 cm creates strong presence.' },
+      { id: 'embroidered-polo', name: 'Embroidered Polo', desc: 'Premium stitched logo on chest.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=craft-mug', priceRange: '$32+', aiTip: 'Embroidery works better than print for detailed logos.' },
+      { id: 'logo-keychain', name: 'Logo Keychain', desc: 'Acrylic or wooden with your logo.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=craft-keychain', priceRange: '$8–$15' },
     ];
     if (productType === 'clothing') return base.filter(b => b.id === 'embroidered-polo' || b.id === 'logo-keychain');
     if (productType === 'gift') return base.filter(b => b.id !== 'office-logo');
@@ -66,41 +66,41 @@ export function getRecommendations(answers: WizardAnswers): DesignSuggestion[] {
     return [
       { id: 'nursery-sign', name: 'Nursery Wall Sign', desc: 'Personalized baby name sign.', img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&q=80', link: '/marketplace/configure?product=plaque-award', priceRange: '$79–$129' },
       { id: 'baby-plaque', name: 'Baby Name Plaque', desc: 'Elegant engraved plaque.', img: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&q=80', link: '/marketplace/configure?product=plaque-award', priceRange: '$69–$99' },
-      { id: 'personalized-gift', name: 'Personalized Gift', desc: 'Keychain, coaster, or plaque.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=keychain-custom', priceRange: '$8–$89' },
+      { id: 'personalized-gift', name: 'Personalized Gift', desc: 'Keychain, coaster, or plaque.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=craft-keychain', priceRange: '$8–$89' },
     ];
   }
 
   // Wedding
   if (productType === 'wedding') {
     return [
-      { id: 'welcome-sign', name: 'Wedding Welcome Sign', desc: 'Acrylic or wood welcome sign.', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&q=80', link: '/marketplace/configure?product=wedding-invite', priceRange: '$149–$299', aiTip: 'Bulk guest tags? Upload a CSV for automatic generation.' },
-      { id: 'table-numbers', name: 'Table Number Signs', desc: 'Elegant table numbers.', img: 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=400&q=80', link: '/marketplace/configure?product=wedding-invite', priceRange: '$15/ea' },
-      { id: 'guest-tags', name: 'Guest Name Place Cards', desc: 'Personalized place cards.', img: 'https://images.unsplash.com/photo-1563503541575-cf60b134d1dd?w=400&q=80', link: '/marketplace/configure?product=wedding-invite', priceRange: '$2/ea' },
+      { id: 'welcome-sign', name: 'Wedding Welcome Sign', desc: 'Acrylic or wood welcome sign.', img: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&q=80', link: '/marketplace/configure?product=craft-welcome', priceRange: '$149–$299', aiTip: 'Bulk guest tags? Upload a CSV for automatic generation.' },
+      { id: 'table-numbers', name: 'Table Number Signs', desc: 'Elegant table numbers.', img: 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=400&q=80', link: '/marketplace/configure?product=craft-welcome', priceRange: '$15/ea' },
+      { id: 'guest-tags', name: 'Guest Name Place Cards', desc: 'Personalized place cards.', img: 'https://images.unsplash.com/photo-1563503541575-cf60b134d1dd?w=400&q=80', link: '/marketplace/configure?product=craft-welcome', priceRange: '$2/ea' },
     ];
   }
 
   // Business sign – design variations
   if (productType === 'business-sign') {
     return [
-      { id: 'acrylic-layered', name: 'Acrylic Layered Sign', desc: '3D depth, premium look.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$299–$1,200', aiTip: style === 'luxury' ? 'Layered acrylic suits luxury interiors.' : undefined },
-      { id: 'led-halo', name: 'LED Halo Sign', desc: 'Illuminated edge lighting.', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$449–$900', aiTip: usageLocation === 'outdoor-building' ? 'LED recommended for outdoor visibility.' : undefined },
-      { id: 'metal-look', name: 'Metal-Look Sign', desc: 'Brushed brass or matte black.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$399–$800', aiTip: style === 'minimal' ? 'Matte black fits minimal aesthetics.' : undefined },
+      { id: 'acrylic-layered', name: 'Acrylic Layered Sign', desc: '3D depth, premium look.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$299–$1,200', aiTip: style === 'luxury' ? 'Layered acrylic suits luxury interiors.' : undefined },
+      { id: 'led-halo', name: 'LED Halo Sign', desc: 'Illuminated edge lighting.', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$449–$900', aiTip: usageLocation === 'outdoor-building' ? 'LED recommended for outdoor visibility.' : undefined },
+      { id: 'metal-look', name: 'Metal-Look Sign', desc: 'Brushed brass or matte black.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$399–$800', aiTip: style === 'minimal' ? 'Matte black fits minimal aesthetics.' : undefined },
     ];
   }
 
   // Clothing – design variations
   if (productType === 'clothing') {
     return [
-      { id: 'embroidered-chest', name: 'Embroidered Chest Logo', desc: 'Classic left chest placement.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=apparel-polo', priceRange: '$32+', aiTip: 'Embroidery works better for logos with fine details.' },
+      { id: 'embroidered-chest', name: 'Embroidered Chest Logo', desc: 'Classic left chest placement.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=craft-mug', priceRange: '$32+', aiTip: 'Embroidery works better for logos with fine details.' },
       { id: 'large-back', name: 'Large Back Print', desc: 'Full-color DTF back print.', img: 'https://images.unsplash.com/photo-1556821840-0a63f95609a7?w=400&q=80', link: '/marketplace/configure?product=apparel-hoodie', priceRange: '$45+', aiTip: 'DTF print for full-color or photographic designs.' },
-      { id: 'sleeve-logo', name: 'Sleeve Logo', desc: 'Subtle sleeve branding.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=apparel-polo', priceRange: '$28+' },
+      { id: 'sleeve-logo', name: 'Sleeve Logo', desc: 'Subtle sleeve branding.', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=400&q=80', link: '/marketplace/configure?product=craft-mug', priceRange: '$28+' },
     ];
   }
 
   // Default
   return [
-    { id: 'sign', name: '3D Logo Sign', desc: 'Custom signage for any space.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$299+' },
-    { id: 'gift', name: 'Personalized Gift', desc: 'Keychains, coasters, plaques.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=keychain-custom', priceRange: '$8+' },
+    { id: 'sign', name: '3D Logo Sign', desc: 'Custom signage for any space.', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$299+' },
+    { id: 'gift', name: 'Personalized Gift', desc: 'Keychains, coasters, plaques.', img: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&q=80', link: '/marketplace/configure?product=craft-keychain', priceRange: '$8+' },
   ];
 }
 
@@ -112,13 +112,13 @@ export function getDesignComparisons(productType: ProductType): { a: DesignSugge
     return [
       {
         label: 'LED vs Non-LED',
-        a: { id: 'led', name: 'LED Halo', desc: 'Illuminated', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=300&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$449+' },
-        b: { id: 'no-led', name: 'No LED', desc: 'Matte finish', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$299+' },
+        a: { id: 'led', name: 'LED Halo', desc: 'Illuminated', img: 'https://images.unsplash.com/photo-1563298723-dcfebaa392e3?w=300&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$449+' },
+        b: { id: 'no-led', name: 'No LED', desc: 'Matte finish', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$299+' },
       },
       {
         label: 'Gold Acrylic vs Black',
-        a: { id: 'gold', name: 'Gold / Brass', desc: 'Luxury look', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$399+' },
-        b: { id: 'black', name: 'Matte Black', desc: 'Modern minimal', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=sign-3d-logo', priceRange: '$299+' },
+        a: { id: 'gold', name: 'Gold / Brass', desc: 'Luxury look', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$399+' },
+        b: { id: 'black', name: 'Matte Black', desc: 'Modern minimal', img: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=300&q=80', link: '/marketplace/configure?product=craft-sign', priceRange: '$299+' },
       },
     ];
   }
@@ -126,7 +126,7 @@ export function getDesignComparisons(productType: ProductType): { a: DesignSugge
     return [
       {
         label: 'Embroidery vs DTF Print',
-        a: { id: 'emb', name: 'Embroidery', desc: 'Stitched, premium', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=300&q=80', link: '/marketplace/configure?product=apparel-polo', priceRange: '+$8' },
+        a: { id: 'emb', name: 'Embroidery', desc: 'Stitched, premium', img: 'https://images.unsplash.com/photo-1581655353564-df123a1eb820?w=300&q=80', link: '/marketplace/configure?product=craft-mug', priceRange: '+$8' },
         b: { id: 'dtf', name: 'DTF Print', desc: 'Full color, smooth', img: 'https://images.unsplash.com/photo-1556821840-0a63f95609a7?w=300&q=80', link: '/marketplace/configure?product=apparel-hoodie', priceRange: '+$5' },
       },
     ];

@@ -1,19 +1,22 @@
 import { useRef, useEffect } from 'react';
 import type { DesignConfig } from '@/services/fileGeneration';
+import { FONT_LIBRARY } from '@/services/CustomizationEngine';
 
 interface CanvasProductPreviewProps {
-  config: DesignConfig;
+  config: DesignConfig & { zonePlacement?: { x: number; y: number; scale: number }; font?: string };
   width?: number;
   height?: number;
   logoUrl?: string;
   className?: string;
+  /** Zone bounds 0-1 from schema (x, y, w, h) */
+  zoneBounds?: { x: number; y: number; w: number; h: number };
 }
 
 /**
- * Canvas-based 2D product preview (A6).
- * Renders design config (text, shape, dimensions) to an HTML5 Canvas.
+ * Canvas-based 2D product preview — text/logo only, no box.
+ * Design is configurable: position, scale, font. Renders over product image.
  */
-export function CanvasProductPreview({ config, width = 400, height = 300, logoUrl, className }: CanvasProductPreviewProps) {
+export function CanvasProductPreview({ config, width = 400, height = 300, logoUrl, className, zoneBounds }: CanvasProductPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -32,90 +35,67 @@ export function CanvasProductPreview({ config, width = 400, height = 300, logoUr
 
     const w = width;
     const h = height;
-    const padding = 20;
-    const innerW = w - padding * 2;
-    const innerH = h - padding * 2;
-    const shape = config.shape || 'rounded';
-    const text = config.text || 'SAMPLE';
+    const text = config.text || '';
     const subtext = config.subtext || '';
 
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, w, h);
+    // Design zone: use zoneBounds from schema, or full canvas
+    const zb = zoneBounds ?? { x: 0.15, y: 0.15, w: 0.7, h: 0.7 };
+    const zoneX = zb.x * w;
+    const zoneY = zb.y * h;
+    const zoneW = zb.w * w;
+    const zoneH = zb.h * h;
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(padding, padding, innerW, innerH);
+    // Placement within zone (0–1): configurable via sliders
+    const zp = config.zonePlacement ?? { x: 0.5, y: 0.5, scale: 1 };
+    const posX = zoneX + zp.x * zoneW;
+    const posY = zoneY + zp.y * zoneH;
+    const scale = Math.max(0.3, Math.min(1.5, zp.scale ?? 1));
 
-    const radius = shape === 'circle' ? Math.min(innerW, innerH) / 2 : shape === 'rounded' ? 12 : 0;
-    ctx.beginPath();
-    if (radius > 0 && 'roundRect' in ctx) {
-      (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(padding, padding, innerW, innerH, radius);
-    } else {
-      ctx.rect(padding, padding, innerW, innerH);
-    }
-    ctx.clip();
+    ctx.clearRect(0, 0, w, h);
 
-    ctx.fillStyle = config.material === 'acrylic_black' ? '#1a1a1a' : config.material === 'wood_oak' ? '#c4a574' : 'rgba(255,255,255,0.08)';
-    ctx.fill();
-
-    ctx.fillStyle = '#0a0a0a';
-    ctx.strokeStyle = 'rgba(0,240,255,0.4)';
-    ctx.lineWidth = 2;
-    
-    // LED Glow simulation (C6) for border
-    ctx.shadowBlur = config.type === 'sign' ? 20 : 0;
-    ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
-
-    ctx.beginPath();
-    if (radius > 0 && 'roundRect' in ctx) {
-      (ctx as CanvasRenderingContext2D & { roundRect: (x: number, y: number, w: number, h: number, r: number) => void }).roundRect(padding, padding, innerW, innerH, radius);
-    } else {
-      ctx.rect(padding, padding, innerW, innerH);
-    }
-    ctx.stroke();
-    
-    // Reset shadow
-    ctx.shadowBlur = 0;
-
-    const centerX = padding + innerW / 2;
-    const centerY = padding + innerH / 2;
+    const fontEntry = FONT_LIBRARY.find((f) => f.id === config.font) ?? FONT_LIBRARY[0];
+    const fontFamily = fontEntry?.family ?? "'Segoe UI', system-ui, sans-serif";
 
     if (logoUrl) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        const maxW = innerW * 0.6;
-        const maxH = innerH * 0.5;
-        const scale = Math.min(maxW / img.width, maxH / img.height, 1);
-        const dw = img.width * scale;
-        const dh = img.height * scale;
-        
-        ctx.shadowBlur = config.type === 'sign' ? 15 : 0;
-        ctx.shadowColor = 'rgba(0, 240, 255, 0.8)';
-        ctx.drawImage(img, centerX - dw / 2, centerY - dh / 2 - 10, dw, dh);
-        ctx.shadowBlur = 0;
+        const maxW = zoneW * 0.6 * scale;
+        const maxH = zoneH * 0.5 * scale;
+        const imgScale = Math.min(maxW / img.width, maxH / img.height, 1);
+        const dw = img.width * imgScale;
+        const dh = img.height * imgScale;
+        ctx.drawImage(img, posX - dw / 2, posY - dh / 2, dw, dh);
       };
       img.src = logoUrl;
-    } else {
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.min(24, innerW / 8)}px sans-serif`;
+    } else if (text) {
+      const baseFontSize = Math.min(28, zoneW / 6) * scale;
+      const subFontSize = Math.min(14, zoneW / 12) * scale;
+
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      // LED Glow simulation (C6) for text
-      ctx.shadowBlur = config.type === 'sign' ? 15 : 5;
-      ctx.shadowColor = config.type === 'sign' ? 'rgba(0, 240, 255, 1)' : 'rgba(0,0,0,0.5)';
-      
-      ctx.fillText(text, centerX, centerY - (subtext ? 8 : 0));
+      ctx.font = `600 ${baseFontSize}px ${fontFamily}`;
+
+      const isDarkMaterial = config.material === 'acrylic_black' || config.material === 'metal_brushed';
+      const mainColor = isDarkMaterial ? 'rgba(220,220,220,0.95)' : 'rgba(45,40,35,0.92)';
+      const subColor = isDarkMaterial ? 'rgba(180,180,180,0.85)' : 'rgba(60,55,50,0.8)';
+
+      ctx.fillStyle = mainColor;
+      ctx.shadowColor = isDarkMaterial ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetY = 1;
+      ctx.fillText(text, posX, posY - (subtext ? baseFontSize * 0.35 : 0));
+
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
 
       if (subtext) {
-        ctx.font = `${Math.min(14, innerW / 12)}px sans-serif`;
-        ctx.fillStyle = 'rgba(255,255,255,0.7)';
-        ctx.fillText(subtext, centerX, centerY + 16);
+        ctx.font = `${subFontSize}px ${fontFamily}`;
+        ctx.fillStyle = subColor;
+        ctx.fillText(subtext, posX, posY + baseFontSize * 0.5);
       }
-      ctx.shadowBlur = 0;
     }
-  }, [config, width, height, logoUrl]);
+  }, [config, width, height, logoUrl, zoneBounds]);
 
-  return <canvas ref={canvasRef} className={className} style={{ display: 'block', margin: '0 auto' }} />;
+  return <canvas ref={canvasRef} className={className} style={{ display: 'block', margin: '0 auto', background: 'transparent' }} />;
 }

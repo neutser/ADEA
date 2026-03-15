@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { PageMeta } from '@/components/PageMeta';
 import { analyzeScene, getRecommendationsFromAnalysis, FALLBACK_RECOMMENDATIONS } from '@/services/aiScene';
 
-const SCENE_CAPABLE_PRODUCTS = ['sign-3d-logo', 'mock-sign-1'];
+const SCENE_CAPABLE_PRODUCTS: string[] = [];
 
 /**
  * AI Custom Builder - Scene upload and product placement
@@ -381,7 +381,7 @@ const AIBuilder = () => {
                 </ul>
               </div>
 
-              <Link to="/marketplace/configure?product=sign-3d-logo" className="btn btn-primary" style={{ width: '100%' }}>
+              <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ width: '100%' }}>
                 <Maximize2 size={18} style={{ marginRight: 8 }} />
                 Design Sign (No Photo)
               </Link>

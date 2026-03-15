@@ -19,7 +19,7 @@ const BusinessSigns = () => (
           <p className="text-lg" style={{ color: 'var(--text-secondary)', maxWidth: '700px', margin: '0 auto' }}>
             Premium custom signage for offices, restaurants, salons, and retail. See your sign before you buy.
           </p>
-          <Link to="/ai-builder" className="btn btn-primary" style={{ marginTop: '32px', padding: '16px 32px' }}>
+          <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ marginTop: '32px', padding: '16px 32px' }}>
             Upload Your Building Photo
           </Link>
         </motion.div>
@@ -57,13 +57,13 @@ const BusinessSigns = () => (
             <Lightbulb size={40} color="var(--accent-neon-purple)" style={{ marginBottom: 16 }} />
             <h3 className="heading-md" style={{ marginBottom: 12 }}>LED Illumination</h3>
             <p style={{ color: 'var(--text-secondary)' }}>Warm white, neon blue, or purple halo. Make your sign stand out.</p>
-            <Link to="/marketplace/configure?product=sign-3d-logo" className="btn btn-outline" style={{ marginTop: 16 }}>Configure</Link>
+            <Link to="/marketplace/configure?product=craft-sign" className="btn btn-outline" style={{ marginTop: 16 }}>Configure</Link>
           </div>
           <div className="card" style={{ padding: '32px' }}>
             <DoorOpen size={40} color="#ff9900" style={{ marginBottom: 16 }} />
             <h3 className="heading-md" style={{ marginBottom: 12 }}>Preview in Your Space</h3>
             <p style={{ color: 'var(--text-secondary)' }}>Upload a photo of your space. See your sign in place before purchase.</p>
-            <Link to="/ai-builder" className="btn btn-outline" style={{ marginTop: 16 }}>AI Builder</Link>
+            <Link to="/marketplace/configure?product=craft-sign" className="btn btn-outline" style={{ marginTop: 16 }}>AI Builder</Link>
           </div>
         </div>
       </div>

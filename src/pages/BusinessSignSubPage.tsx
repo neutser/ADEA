@@ -41,11 +41,11 @@ const BusinessSignSubPage = () => {
                 <h1 className="heading-lg" style={{ marginBottom: 16 }}>{page.title}</h1>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.7, marginBottom: 24 }}>{page.desc}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                  <Link to="/marketplace/configure?product=sign-3d-logo" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <Link to="/marketplace/configure?product=craft-sign" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                     Design Your Sign
                   </Link>
-                  <Link to="/ai-builder" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                    Preview in Your Space
+                  <Link to="/marketplace/configure?product=craft-sign" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    Customize Design
                   </Link>
                   <Link to="/quote" className="btn btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                     Request Quote
