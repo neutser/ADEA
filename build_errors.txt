@@ -1,0 +1,10 @@
+
+> adea-crafts@0.0.0 build
+> tsc -b && vite build
+
+error TS6053: File 'C:/Users/Admin/Desktop/adea crafts/src/data/configuratorData.ts' not found.
+  The file is in the program because:
+    Matched by include pattern 'src' in 'C:/Users/Admin/Desktop/adea crafts/tsconfig.app.json'
+error TS6053: File 'C:/Users/Admin/Desktop/adea crafts/src/pages/UniversalConfigurator.tsx' not found.
+  The file is in the program because:
+    Matched by include pattern 'src' in 'C:/Users/Admin/Desktop/adea crafts/tsconfig.app.json'

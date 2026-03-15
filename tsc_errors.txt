@@ -1,0 +1,33 @@
+src/components/ThreeDProductPreview.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(2,18): error TS6133: 'useFrame' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(3,77): error TS6133: 'useTexture' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(3,89): error TS6133: 'Decal' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(166,27): error TS2322: Type '{ children: Element; disableNormalPass: true; }' is not assignable to type 'IntrinsicAttributes & EffectComposerProps & RefAttributes<EffectComposer>'.
+  Property 'disableNormalPass' does not exist on type 'IntrinsicAttributes & EffectComposerProps & RefAttributes<EffectComposer>'. Did you mean 'enableNormalPass'?
+src/pages/Admin/QuoteManagement.tsx(137,58): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/pages/Admin/QuoteManagement.tsx(138,89): error TS2322: Type '{}' is not assignable to type 'ReactNode'.
+src/pages/Admin/QuoteManagement.tsx(176,42): error TS2304: Cannot find name 'setExpandedId'.
+src/pages/Admin/QuoteManagement.tsx(176,56): error TS2304: Cannot find name 'expandedId'.
+src/pages/Admin/QuoteManagement.tsx(178,39): error TS2304: Cannot find name 'expandedId'.
+src/pages/Admin/QuoteManagement.tsx(180,28): error TS2304: Cannot find name 'expandedId'.
+src/pages/Admin/QuoteManagement.tsx(184,22): error TS2304: Cannot find name 'expandedId'.
+src/pages/DynamicConfigurator.tsx(4,3): error TS6133: 'ShoppingCart' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(4,17): error TS6133: 'Upload' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(4,56): error TS6133: 'Download' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(5,3): error TS6133: 'Layers' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(5,11): error TS6133: 'Eye' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(5,52): error TS6133: 'Copy' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(14,3): error TS6133: 'FONT_LIBRARY' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(14,17): error TS6133: 'ICON_SYMBOLS' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(17,1): error TS6133: 'BulkPersonalization' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(29,9): error TS6198: All destructured elements are unused.
+src/pages/DynamicConfigurator.tsx(32,10): error TS6133: 'products' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(39,10): error TS6133: 'activeSurface' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(46,10): error TS6133: 'saved' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(47,10): error TS6133: 'isSaving' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(47,20): error TS6133: 'setIsSaving' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(48,10): error TS6133: 'shareLink' is declared but its value is never read.
+src/pages/Production/FileGenerator.tsx(56,53): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/Production/FileGenerator.tsx(57,5): error TS2353: Object literal may only specify known properties, and 'placement' does not exist in type 'DesignConfig'.
+src/pages/Quote.tsx(82,13): error TS6133: 'data' is declared but its value is never read.

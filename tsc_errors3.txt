@@ -1,0 +1,11 @@
+src/components/ThreeDProductPreview.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(2,18): error TS6133: 'useFrame' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(3,77): error TS6133: 'useTexture' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(3,89): error TS6133: 'Decal' is declared but its value is never read.
+src/components/ThreeDProductPreview.tsx(166,27): error TS2322: Type '{ children: Element; disableNormalPass: true; }' is not assignable to type 'IntrinsicAttributes & EffectComposerProps & RefAttributes<EffectComposer>'.
+  Property 'disableNormalPass' does not exist on type 'IntrinsicAttributes & EffectComposerProps & RefAttributes<EffectComposer>'. Did you mean 'enableNormalPass'?
+src/pages/DynamicConfigurator.tsx(6,1): error TS6133: 'useAuth' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(32,10): error TS6133: 'activeSurface' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(32,25): error TS6133: 'setActiveSurface' is declared but its value is never read.
+src/pages/DynamicConfigurator.tsx(47,9): error TS2552: Cannot find name 'setProducts'. Did you mean 'setProduct'?
+src/pages/DynamicConfigurator.tsx(366,47): error TS2304: Cannot find name 'Check'.

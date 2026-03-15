@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR Preview — Adea Crafts</title>
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <style>
+    * { margin: 0; padding: 0; }
+    body { overflow: hidden; }
+    .arjs-loader {
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+    }
+    .arjs-loader div { text-align: center; font-size: 1.1em; margin: 8px 0; }
+    .arjs-loader .hint { font-size: 0.9em; opacity: 0.8; max-width: 280px; }
+    .arjs-loader.hidden { display: none; }
+  </style>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <div class="arjs-loader" id="loader">
+    <div>Loading AR...</div>
+    <div class="hint">Point your camera at the Hiro marker to see your craft in AR.</div>
+    <div class="hint" style="margin-top: 12px;">
+      <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener" style="color: #6cf;">Print Hiro marker</a>
+    </div>
+  </div>
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true;"
+  >
+    <a-marker preset="hiro" emitevents="true" smooth="true" smoothCount="5" smoothTolerance="0.01" smoothThreshold="2">
+      <!-- Craft placeholder: sign-like panel with text -->
+      <a-entity position="0 0 0" rotation="0 0 0" scale="0.5 0.5 0.5">
+        <!-- Back panel (acrylic sign) -->
+        <a-box position="0 0.05 0" width="0.4" height="0.08" depth="0.02" color="#1a1a2e" material="metalness: 0.3; roughness: 0.6"></a-box>
+        <!-- Front face -->
+        <a-box position="0 0.05 0.01" width="0.38" height="0.06" depth="0.005" color="#2d2d44"></a-box>
+        <!-- Text placeholder -->
+        <a-text value="CRAFT" position="0 0.05 0.02" align="center" width="2" color="#6cf" font="monoid"></a-text>
+      </a-entity>
+    </a-marker>
+    <a-entity camera></a-entity>
+  </a-scene>
+  <script>
+    const scene = document.querySelector('a-scene');
+    const loader = document.getElementById('loader');
+    scene.addEventListener('loaded', () => {
+      setTimeout(() => loader.classList.add('hidden'), 1500);
+    });
+  </script>
+</body>
+</html>
