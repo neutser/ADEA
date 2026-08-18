@@ -306,6 +306,13 @@ export function buildDefaults(schema: CustomizationSchema): Record<string, any> 
       config[field.id] = field.min ?? 0;
     } else if (field.type === 'checkbox') {
       config[field.id] = false;
+    } else if (field.type === 'font-picker') {
+      // Font pickers render from FONT_LIBRARY, not field.options, so without an
+      // explicit default the <select> displayed the first font while the config
+      // held nothing — and picking that same first font fired no change event.
+      config[field.id] = FONT_LIBRARY[0].id;
+    } else if (field.type === 'icon-picker') {
+      config[field.id] = field.icons?.[0] ?? 'none';
     }
   }
   if (getFirstZone(schema)) {
