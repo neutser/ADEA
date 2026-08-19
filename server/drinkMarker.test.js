@@ -52,7 +52,7 @@ describe('buildMarkerSheet', () => {
     expect(sheet.count).toBe(6);
     expect(sheet.svg).toContain('<svg');
     for (const n of names) expect(sheet.svg).toContain(`data-name="${n}"`);
-    expect((sheet.svg.match(/<g id="marker-/g) || []).length).toBe(6);
+    expect((sheet.svg.match(/<g id="piece-/g) || []).length).toBe(6);
   });
 
   it('accepts a newline-separated string and ignores blank lines', () => {

@@ -105,6 +105,8 @@ export interface ProductionConstraints {
 }
 
 export interface CustomizationSchema {
+  /** Generator in server/cutGenerators.js that turns each input line into cut geometry. */
+  cutKind?: string;
   surfaces: Surface[];
   fields: SchemaField[];
   preview: PreviewConfig;

@@ -216,9 +216,10 @@ export default function AIStudioConfigurator() {
   const supportsBulk = Boolean(product?.supports_bulk) && variableFields.length > 0;
 
   /** Products whose whole point is a list of names (drink markers, place cards). */
+  const cutKind = schema?.cutKind;
   const nameListField = useMemo(
-    () => (schema?.fields || []).find((f) => f.id === 'names'),
-    [schema]
+    () => (cutKind ? (schema?.fields || []).find((f) => f.id === 'names') : undefined),
+    [schema, cutKind]
   );
   const nameList = useMemo(() => {
     if (!nameListField) return [];
@@ -242,7 +243,7 @@ export default function AIStudioConfigurator() {
       fetch(`${API}/api/export/name-sheet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ names: nameList, fontSizeMM: Number(config.fontSize) || undefined }),
+        body: JSON.stringify({ names: nameList, kind: cutKind, fontSizeMM: Number(config.fontSize) || undefined }),
       })
         .then((r) => (r.ok ? (r.json() as Promise<{ svg?: string }>) : null))
         .then((data) => {
@@ -259,7 +260,7 @@ export default function AIStudioConfigurator() {
       clearTimeout(t);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [nameListField, nameList, config.fontSize]);
+  }, [nameListField, nameList, config.fontSize, cutKind]);
 
   const [sheetBusy, setSheetBusy] = useState(false);
   const handleDownloadSheet = useCallback(async () => {
@@ -271,6 +272,7 @@ export default function AIStudioConfigurator() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           names: nameList,
+          kind: cutKind,
           fontSizeMM: Number(config.fontSize) || undefined,
           download: true,
         }),
@@ -283,7 +285,7 @@ export default function AIStudioConfigurator() {
       const blob = await res.blob();
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `name-markers-${nameList.length}.svg`;
+      a.download = `${cutKind ?? 'cut'}-${nameList.length}.svg`;
       a.click();
       URL.revokeObjectURL(a.href);
       trackEvent('name_sheet_export', '/marketplace/configure', { count: nameList.length }, product?.id);
@@ -292,7 +294,7 @@ export default function AIStudioConfigurator() {
     } finally {
       setSheetBusy(false);
     }
-  }, [nameList, config.fontSize, product]);
+  }, [nameList, config.fontSize, product, cutKind]);
 
   const handleBulkGenerate = useCallback((rows: Array<Record<string, string>>) => {
     if (!product || rows.length === 0) return;
@@ -538,7 +540,7 @@ export default function AIStudioConfigurator() {
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
                   {nameList.length === 0
                     ? 'Add one name per line above to generate a cut-ready sheet.'
-                    : `${nameList.length} ${nameList.length === 1 ? 'piece' : 'pieces'} will be laid out on one sheet, ready to cut.`}
+                    : `${nameList.length} ${nameList.length === 1 ? 'item' : 'items'} laid out on one sheet, ready to cut.`}
                 </p>
                 <button
                   type="button"

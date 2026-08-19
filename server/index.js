@@ -18,7 +18,7 @@ import { generateDesign } from './ai/generativeDesign.js';
 import { machineAssistant } from './ai/machineAssistant.js';
 import { runProductSeed } from './runSeed.js';
 import { toCurioLayers } from './machineExport/curioExport.js';
-import { buildMarkerSheet, DEFAULTS as MARKER_DEFAULTS } from './drinkMarker.js';
+import { buildSheet, GENERATOR_KINDS, SHEET_DEFAULTS } from './cutGenerators.js';
 import { toLightBurnSVG } from './machineExport/xtoolExport.js';
 import { generateMockup } from './mockupGenerator.js';
 
@@ -888,7 +888,7 @@ app.post('/api/export/design', (req, res) => {
  * which is the whole point of the product: paste a guest list, cut once.
  */
 app.post('/api/export/name-sheet', (req, res) => {
-  const { names, fontSizeMM, sheetWidthMM, sheetHeightMM, download } = req.body || {};
+  const { names, kind = 'drink-marker', fontSizeMM, sheetWidthMM, sheetHeightMM, download } = req.body || {};
   const list = Array.isArray(names) ? names : String(names || '').split(/\r?\n/);
   const cleaned = list.map((n) => String(n).trim()).filter(Boolean);
 
@@ -898,18 +898,21 @@ app.post('/api/export/name-sheet', (req, res) => {
   if (cleaned.length > 300) {
     return res.status(400).json({ error: 'Maximum 300 names per sheet.' });
   }
+  if (!GENERATOR_KINDS.includes(kind)) {
+    return res.status(400).json({ error: `Unknown cut product "${kind}".` });
+  }
 
   try {
-    const result = buildMarkerSheet(cleaned, {
-      fontSizeMM: Number(fontSizeMM) || MARKER_DEFAULTS.fontSizeMM,
-      sheetWidthMM: Number(sheetWidthMM) || MARKER_DEFAULTS.sheetWidthMM,
-      sheetHeightMM: Number(sheetHeightMM) || MARKER_DEFAULTS.sheetHeightMM,
+    const result = buildSheet(kind, cleaned, {
+      fontSizeMM: Number(fontSizeMM) || SHEET_DEFAULTS.fontSizeMM,
+      sheetWidthMM: Number(sheetWidthMM) || SHEET_DEFAULTS.sheetWidthMM,
+      sheetHeightMM: Number(sheetHeightMM) || SHEET_DEFAULTS.sheetHeightMM,
     });
     if (!result.svg) return res.status(400).json({ error: result.error || 'Could not build sheet.' });
 
     if (download) {
       res.setHeader('Content-Type', 'image/svg+xml');
-      res.setHeader('Content-Disposition', `attachment; filename="name-markers-${cleaned.length}.svg"`);
+      res.setHeader('Content-Disposition', `attachment; filename="${kind}-${cleaned.length}.svg"`);
       return res.send(result.svg);
     }
     // Inline preview for the configurator canvas.
@@ -925,6 +928,8 @@ app.post('/api/export/name-sheet', (req, res) => {
     res.status(500).json({ error: err.message || 'Sheet generation failed' });
   }
 });
+
+app.get('/api/export/cut-kinds', (_req, res) => res.json({ kinds: GENERATOR_KINDS }));
 
 /* ═══ HEALTH ═══════════════════════════════════════════════ */
 app.get('/api/health', (req, res) => {
