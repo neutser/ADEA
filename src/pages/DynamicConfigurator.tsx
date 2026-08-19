@@ -4,6 +4,7 @@ import { Sparkles, Save, Share2, MessageSquare, History, Undo, Redo, Check, Uplo
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import BulkPersonalization from '@/components/BulkPersonalization';
 import { PageMeta } from '@/components/PageMeta';
 import {
   type MarketplaceProduct, type SchemaField,
@@ -50,7 +51,7 @@ export default function AIStudioConfigurator() {
   } = useConfigurator({ product, apiBase: API });
 
   // UI state
-  const [rightPanelTab, setRightPanelTab] = useState<'ai' | 'history'>('ai');
+  const [rightPanelTab, setRightPanelTab] = useState<'ai' | 'history' | 'bulk'>('ai');
   const [designBusy, setDesignBusy] = useState(false);
   const [designStatus, setDesignStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [isNightMode, setIsNightMode] = useState(false);
@@ -201,6 +202,116 @@ export default function AIStudioConfigurator() {
       updateConfigAndHistory('logo', dataUrl);
     }
   }, [schema]);
+
+  /* ── Bulk personalization & cut sheets ─────────────────────
+     BulkPersonalization has been in the tree since the first commit but was
+     never rendered by anything. Products flagged supports_bulk now expose it:
+     paste a guest list, get one line item per row. */
+  const variableFields = useMemo(
+    () => (schema?.fields || [])
+      .filter((f) => f.type === 'text' || f.type === 'textarea')
+      .map((f) => ({ id: f.id, label: f.label })),
+    [schema]
+  );
+  const supportsBulk = Boolean(product?.supports_bulk) && variableFields.length > 0;
+
+  /** Products whose whole point is a list of names (drink markers, place cards). */
+  const nameListField = useMemo(
+    () => (schema?.fields || []).find((f) => f.id === 'names'),
+    [schema]
+  );
+  const nameList = useMemo(() => {
+    if (!nameListField) return [];
+    const raw = typeof config.names === 'string' ? config.names : '';
+    return raw
+      .split(/\r?\n/)
+      .map((n) => n.trim())
+      .filter(Boolean);
+  }, [nameListField, config.names]);
+
+  const [sheetPreview, setSheetPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!nameListField || nameList.length === 0) {
+      setSheetPreview(null);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    const t = setTimeout(() => {
+      fetch(`${API}/api/export/name-sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names: nameList, fontSizeMM: Number(config.fontSize) || undefined }),
+      })
+        .then((r) => (r.ok ? (r.json() as Promise<{ svg?: string }>) : null))
+        .then((data) => {
+          if (cancelled || !data?.svg) return;
+          // Render via an object URL rather than dangerouslySetInnerHTML — the
+          // sheet embeds customer-supplied names.
+          objectUrl = URL.createObjectURL(new Blob([data.svg], { type: 'image/svg+xml' }));
+          setSheetPreview(objectUrl);
+        })
+        .catch(() => undefined);
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [nameListField, nameList, config.fontSize]);
+
+  const [sheetBusy, setSheetBusy] = useState(false);
+  const handleDownloadSheet = useCallback(async () => {
+    if (nameList.length === 0) return;
+    setSheetBusy(true);
+    try {
+      const res = await fetch(`${API}/api/export/name-sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          names: nameList,
+          fontSizeMM: Number(config.fontSize) || undefined,
+          download: true,
+        }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setDesignStatus({ tone: 'error', text: err.error || 'Could not build the cut sheet.' });
+        return;
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `name-markers-${nameList.length}.svg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      trackEvent('name_sheet_export', '/marketplace/configure', { count: nameList.length }, product?.id);
+    } catch {
+      setDesignStatus({ tone: 'error', text: 'Could not reach the export service.' });
+    } finally {
+      setSheetBusy(false);
+    }
+  }, [nameList, config.fontSize, product]);
+
+  const handleBulkGenerate = useCallback((rows: Array<Record<string, string>>) => {
+    if (!product || rows.length === 0) return;
+    for (const row of rows) {
+      addItem({
+        name: product.name,
+        price: pricing.unitPrice,
+        quantity: 1,
+        image: product.hero_image,
+        options: Object.fromEntries(
+          variableFields
+            .filter((f) => row[f.id])
+            .map((f) => [f.label, row[f.id]])
+        ),
+      });
+    }
+    trackEvent('bulk_generate', '/marketplace/configure', { rows: rows.length }, product.id);
+    void navigate('/cart');
+  }, [product, pricing.unitPrice, addItem, variableFields, navigate]);
 
   /* ── Save / Share ──────────────────────────────────────────
      Both buttons were wired to `onClick={() => null}`. The backend has had
@@ -421,6 +532,26 @@ export default function AIStudioConfigurator() {
               <FieldRenderer key={field.id} field={field} value={config[field.id]} onChange={(val) => updateConfigAndHistory(field.id, val)} onUpload={() => triggerUpload(field.id)} />
             ))}
             <input type="file" ref={fileRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} aria-label="Upload design image" />
+            {nameListField && (
+              <div style={{ border: '1px solid var(--accent-neon-blue)', borderRadius: 10, padding: 14, background: 'rgba(0,240,255,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', marginBottom: 6, color: 'var(--accent-neon-blue)' }}>Cut sheet</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
+                  {nameList.length === 0
+                    ? 'Add one name per line above to generate a cut-ready sheet.'
+                    : `${nameList.length} ${nameList.length === 1 ? 'piece' : 'pieces'} will be laid out on one sheet, ready to cut.`}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void handleDownloadSheet()}
+                  disabled={nameList.length === 0 || sheetBusy}
+                  style={{ width: '100%', padding: 10, fontSize: '0.85rem' }}
+                >
+                  <Download size={14} style={{ marginRight: 6 }} />
+                  {sheetBusy ? 'Building…' : `Download SVG${nameList.length ? ` (${nameList.length})` : ''}`}
+                </button>
+              </div>
+            )}
             {getFirstZone(schema) && (config.text || config.subtext || config.logo || config.artwork || config.photo) ? (
               <div style={{ border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, background: 'rgba(255,255,255,0.02)', marginTop: 12 }}>
                 <h3 style={{ fontSize: '0.85rem', marginBottom: 8, color: 'var(--text-secondary)' }}>Design Position</h3>
@@ -489,6 +620,17 @@ export default function AIStudioConfigurator() {
 
         {/* ==================== CENTER: 3D CANVAS ==================== */}
         <div className="ai-studio-canvas">
+          {nameListField ? (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#fff', borderRadius: 8 }}>
+              {sheetPreview ? (
+                <img src={sheetPreview} alt={`Cut sheet preview with ${nameList.length} names`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              ) : (
+                <p style={{ color: '#666', fontSize: '0.9rem', textAlign: 'center' }}>
+                  Type one name per line to see your cut sheet.
+                </p>
+              )}
+            </div>
+          ) : (
           <PreviewRegistry
             previewType={schema.preview?.type ?? 'flat-artwork'}
             config={config}
@@ -499,6 +641,7 @@ export default function AIStudioConfigurator() {
             heroImage={product.hero_image}
             zoneBounds={schema ? (() => { const z = getFirstZone(schema); return z ? parseZoneBounds(z) : undefined; })() : undefined}
           />
+          )}
           
           <div className="floating-toolbar glass-panel">
             <button className={`tool-btn ${!isNightMode ? 'active' : ''}`} onClick={() => { setIsNightMode(false); trackEvent('configurator_day_mode', '/marketplace/configure', { productId: product?.id }); }} title="Studio Lighting (Day)">
@@ -527,9 +670,19 @@ export default function AIStudioConfigurator() {
             <button onClick={() => setRightPanelTab('history')} style={{ flex: 1, padding: '12px 0', borderBottom: rightPanelTab === 'history' ? '2px solid var(--accent-neon-blue)' : '2px solid transparent', color: rightPanelTab === 'history' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
               <History size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Versions
             </button>
+            {supportsBulk && (
+              <button onClick={() => setRightPanelTab('bulk')} style={{ flex: 1, padding: '12px 0', borderBottom: rightPanelTab === 'bulk' ? '2px solid var(--accent-neon-blue)' : '2px solid transparent', color: rightPanelTab === 'bulk' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                <Layers size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Bulk
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {rightPanelTab === 'bulk' && supportsBulk && (
+              <div style={{ flex: 1 }}>
+                <BulkPersonalization variableFields={variableFields} onGenerate={handleBulkGenerate} />
+              </div>
+            )}
             {rightPanelTab === 'ai' && (
               <>
                 {aiFallback ? (

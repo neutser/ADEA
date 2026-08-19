@@ -26,7 +26,40 @@ const CRAFT_SCHEMA = {
   production: { minTextMM: 2 },
 };
 
+/**
+ * NAME_LIST_SCHEMA — for products cut one-per-name from a list.
+ * The `names` textarea is the whole product: paste a guest list, get a sheet.
+ */
+const NAME_LIST_SCHEMA = {
+  surfaces: [{ id: 'front', label: 'Cut Area', zones: [{ id: 'main', x: '5%', y: '5%', w: '90%', h: '90%' }] }],
+  fields: [
+    { id: 'names', type: 'textarea', label: 'Names', rows: 6, maxLen: 2000,
+      placeholder: 'One name per line\nAlisa\nMorgan\nJean-Luc' },
+    { id: 'font', type: 'font-picker', label: 'Font' },
+    { id: 'material', type: 'color-swatch', label: 'Acrylic Colour', options: [
+      { id: 'teal', label: 'Teal', hex: '#2a7f9e' },
+      { id: 'black', label: 'Black', hex: '#1a1a1a' },
+      { id: 'white', label: 'White', hex: '#f2f2f2' },
+      { id: 'rose', label: 'Rose Gold', hex: '#b76e79' },
+      { id: 'clear', label: 'Clear', hex: '#d8e6ea' },
+    ], default: 'teal' },
+    { id: 'fontSize', type: 'slider', label: 'Letter Height', min: 6, max: 18, step: 1, default: 10, unit: 'mm' },
+  ],
+  preview: { type: 'flat-artwork' },
+  production: { minTextMM: 2, minLineMM: 1 },
+};
+
 const CRAFT_CATEGORIES = [
+  {
+    id: 'party',
+    name: 'Party & Event',
+    products: [
+      { id: 'craft-drink-marker', slug: 'craft-drink-marker', name: 'Name Drink Marker Clips', base_price: 3, schema: NAME_LIST_SCHEMA, image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600' },
+      { id: 'craft-place-card', slug: 'craft-place-card', name: 'Name Place Cards', base_price: 3, schema: NAME_LIST_SCHEMA, image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600' },
+      { id: 'craft-cake-topper', slug: 'craft-cake-topper', name: 'Name Cake Topper', base_price: 15, schema: NAME_LIST_SCHEMA, image: 'https://images.unsplash.com/photo-1535141192574-5d4897c12636?w=600' },
+      { id: 'craft-favor-tag', slug: 'craft-favor-tag', name: 'Guest Favour Name Tags', base_price: 2, schema: NAME_LIST_SCHEMA, image: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600' },
+    ],
+  },
   {
     id: 'crafts',
     name: 'Crafts',
@@ -92,6 +125,11 @@ const CRAFT_CATEGORIES = [
 ];
 
 const PRODUCT_DESCRIPTIONS = {
+  'craft-drink-marker': 'Personalized acrylic charms that clip onto any wine or cocktail glass — place settings and drink tags in one. Type or paste a list of names and every clip is laid out on a single cut-ready sheet.',
+  'craft-place-card': 'Standing laser-cut name place cards. Paste your guest list and the whole table is generated at once. Acrylic or wood.',
+  'craft-cake-topper': 'Cut-out name or phrase cake topper on food-safe acrylic. Letters welded into one piece with a support rail and picks.',
+  'craft-favour-tag': 'Small engraved name tags for favour boxes, gift bags, and jars. Cut a full guest list in one pass.',
+  'craft-favor-tag': 'Small engraved name tags for favour boxes, gift bags, and jars. Cut a full guest list in one pass.',
   'craft-keychain': 'Laser-engraved acrylic or wood keychain. Add name, initials, or logo. Perfect for gifts, events, and branding.',
   'craft-coaster': 'Set of 4 cork coasters with monogram or custom design. Eco-friendly, absorbent, ideal for weddings and housewarmings.',
   'craft-bookmark': 'Genuine leather bookmark with tassel. Engrave a name, quote, or date. A thoughtful gift for readers.',
@@ -145,7 +183,7 @@ export function generateCraftProducts() {
         description: PRODUCT_DESCRIPTIONS[p.id] || `Customizable ${p.name.toLowerCase()} with laser engraving. Add your text, logo, or photo.`,
         base_price: p.base_price,
         hero_image: p.image,
-        schema: { ...CRAFT_SCHEMA },
+        schema: p.schema ? { ...p.schema } : { ...CRAFT_SCHEMA },
         pricing: { type: 'fixed-plus-options' },
         quoteOnly: 0,
         bulk: 1,

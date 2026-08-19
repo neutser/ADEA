@@ -18,6 +18,7 @@ import { generateDesign } from './ai/generativeDesign.js';
 import { machineAssistant } from './ai/machineAssistant.js';
 import { runProductSeed } from './runSeed.js';
 import { toCurioLayers } from './machineExport/curioExport.js';
+import { buildMarkerSheet, DEFAULTS as MARKER_DEFAULTS } from './drinkMarker.js';
 import { toLightBurnSVG } from './machineExport/xtoolExport.js';
 import { generateMockup } from './mockupGenerator.js';
 
@@ -878,6 +879,50 @@ app.post('/api/export/design', (req, res) => {
   } catch (err) {
     console.error('Export error:', err);
     res.status(500).json({ error: err.message || 'Export failed' });
+  }
+});
+
+/**
+ * Cut-ready sheet for name-list products (drink markers, place cards, favour
+ * tags). Takes a list of names and returns ONE SVG with every piece laid out,
+ * which is the whole point of the product: paste a guest list, cut once.
+ */
+app.post('/api/export/name-sheet', (req, res) => {
+  const { names, fontSizeMM, sheetWidthMM, sheetHeightMM, download } = req.body || {};
+  const list = Array.isArray(names) ? names : String(names || '').split(/\r?\n/);
+  const cleaned = list.map((n) => String(n).trim()).filter(Boolean);
+
+  if (cleaned.length === 0) {
+    return res.status(400).json({ error: 'Provide at least one name.' });
+  }
+  if (cleaned.length > 300) {
+    return res.status(400).json({ error: 'Maximum 300 names per sheet.' });
+  }
+
+  try {
+    const result = buildMarkerSheet(cleaned, {
+      fontSizeMM: Number(fontSizeMM) || MARKER_DEFAULTS.fontSizeMM,
+      sheetWidthMM: Number(sheetWidthMM) || MARKER_DEFAULTS.sheetWidthMM,
+      sheetHeightMM: Number(sheetHeightMM) || MARKER_DEFAULTS.sheetHeightMM,
+    });
+    if (!result.svg) return res.status(400).json({ error: result.error || 'Could not build sheet.' });
+
+    if (download) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Content-Disposition', `attachment; filename="name-markers-${cleaned.length}.svg"`);
+      return res.send(result.svg);
+    }
+    // Inline preview for the configurator canvas.
+    res.json({
+      svg: result.svg,
+      count: result.count,
+      perRow: result.perRow,
+      rows: result.rows,
+      sheetHeightMM: result.sheetHeightMM,
+    });
+  } catch (err) {
+    console.error('Name sheet error:', err);
+    res.status(500).json({ error: err.message || 'Sheet generation failed' });
   }
 });
 
