@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Sparkles, Save, Share2, MessageSquare, History, Undo, Redo, Check, Upload, Wand2, Download, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import BulkPersonalization from '@/components/BulkPersonalization';
 import { PageMeta } from '@/components/PageMeta';
 import {
   type MarketplaceProduct, type SchemaField,
-  FONT_LIBRARY, getFirstZone, parseZoneBounds
+  FONT_LIBRARY, ICON_SYMBOLS, getFirstZone, parseZoneBounds
 } from '@/services/CustomizationEngine';
 import { trackEvent } from '@/components/AnalyticsTracker';
 import { API_BASE } from '@/config';
@@ -24,6 +26,7 @@ export default function AIStudioConfigurator() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const { addItem } = useCart();
+  const { token, isAuthenticated } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [product, setProduct] = useState<MarketplaceProduct | null>(null);
@@ -48,7 +51,9 @@ export default function AIStudioConfigurator() {
   } = useConfigurator({ product, apiBase: API });
 
   // UI state
-  const [rightPanelTab, setRightPanelTab] = useState<'ai' | 'history'>('ai');
+  const [rightPanelTab, setRightPanelTab] = useState<'ai' | 'history' | 'bulk'>('ai');
+  const [designBusy, setDesignBusy] = useState(false);
+  const [designStatus, setDesignStatus] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [isNightMode, setIsNightMode] = useState(false);
   const [machineId, setMachineId] = useState<MachineId>('curio2');
   // 3D/scene mode disabled — always use 2D product preview
@@ -197,6 +202,184 @@ export default function AIStudioConfigurator() {
       updateConfigAndHistory('logo', dataUrl);
     }
   }, [schema]);
+
+  /* ── Bulk personalization & cut sheets ─────────────────────
+     BulkPersonalization has been in the tree since the first commit but was
+     never rendered by anything. Products flagged supports_bulk now expose it:
+     paste a guest list, get one line item per row. */
+  const variableFields = useMemo(
+    () => (schema?.fields || [])
+      .filter((f) => f.type === 'text' || f.type === 'textarea')
+      .map((f) => ({ id: f.id, label: f.label })),
+    [schema]
+  );
+  const supportsBulk = Boolean(product?.supports_bulk) && variableFields.length > 0;
+
+  /** Products whose whole point is a list of names (drink markers, place cards). */
+  const cutKind = schema?.cutKind;
+  const nameListField = useMemo(
+    () => (cutKind ? (schema?.fields || []).find((f) => f.id === 'names') : undefined),
+    [schema, cutKind]
+  );
+  const nameList = useMemo(() => {
+    if (!nameListField) return [];
+    const raw = typeof config.names === 'string' ? config.names : '';
+    return raw
+      .split(/\r?\n/)
+      .map((n) => n.trim())
+      .filter(Boolean);
+  }, [nameListField, config.names]);
+
+  const [sheetPreview, setSheetPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!nameListField || nameList.length === 0) {
+      setSheetPreview(null);
+      return;
+    }
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    const t = setTimeout(() => {
+      fetch(`${API}/api/export/name-sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ names: nameList, kind: cutKind, fontSizeMM: Number(config.fontSize) || undefined }),
+      })
+        .then((r) => (r.ok ? (r.json() as Promise<{ svg?: string }>) : null))
+        .then((data) => {
+          if (cancelled || !data?.svg) return;
+          // Render via an object URL rather than dangerouslySetInnerHTML — the
+          // sheet embeds customer-supplied names.
+          objectUrl = URL.createObjectURL(new Blob([data.svg], { type: 'image/svg+xml' }));
+          setSheetPreview(objectUrl);
+        })
+        .catch(() => undefined);
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [nameListField, nameList, config.fontSize, cutKind]);
+
+  const [sheetBusy, setSheetBusy] = useState(false);
+  const handleDownloadSheet = useCallback(async () => {
+    if (nameList.length === 0) return;
+    setSheetBusy(true);
+    try {
+      const res = await fetch(`${API}/api/export/name-sheet`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          names: nameList,
+          kind: cutKind,
+          fontSizeMM: Number(config.fontSize) || undefined,
+          download: true,
+        }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setDesignStatus({ tone: 'error', text: err.error || 'Could not build the cut sheet.' });
+        return;
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${cutKind ?? 'cut'}-${nameList.length}.svg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      trackEvent('name_sheet_export', '/marketplace/configure', { count: nameList.length }, product?.id);
+    } catch {
+      setDesignStatus({ tone: 'error', text: 'Could not reach the export service.' });
+    } finally {
+      setSheetBusy(false);
+    }
+  }, [nameList, config.fontSize, product, cutKind]);
+
+  const handleBulkGenerate = useCallback((rows: Array<Record<string, string>>) => {
+    if (!product || rows.length === 0) return;
+    for (const row of rows) {
+      addItem({
+        name: product.name,
+        price: pricing.unitPrice,
+        quantity: 1,
+        image: product.hero_image,
+        options: Object.fromEntries(
+          variableFields
+            .filter((f) => row[f.id])
+            .map((f) => [f.label, row[f.id]])
+        ),
+      });
+    }
+    trackEvent('bulk_generate', '/marketplace/configure', { rows: rows.length }, product.id);
+    void navigate('/cart');
+  }, [product, pricing.unitPrice, addItem, variableFields, navigate]);
+
+  /* ── Save / Share ──────────────────────────────────────────
+     Both buttons were wired to `onClick={() => null}`. The backend has had
+     POST /api/designs (returning { id, shareToken }) all along — the share
+     link it produces is what the ?share= loader above already consumes. */
+  const persistDesign = useCallback(async (): Promise<{ id: string; shareToken: string }> => {
+    if (!product) throw new Error('No product loaded.');
+    const res = await fetch(`${API}/api/designs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ productId: product.id, config, name: product.name }),
+    });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({}))) as { error?: string };
+      throw new Error(err.error || `Could not save design (${res.status}).`);
+    }
+    return (await res.json()) as { id: string; shareToken: string };
+  }, [product, config, token]);
+
+  const requireSignIn = useCallback((action: string) => {
+    setDesignStatus({ tone: 'error', text: `Sign in to ${action} designs.` });
+    const back = `${window.location.pathname}${window.location.search}`;
+    void navigate(`/login?redirect=${encodeURIComponent(back)}`);
+  }, [navigate]);
+
+  const handleSaveDesign = useCallback(async () => {
+    if (!isAuthenticated) return requireSignIn('save');
+    setDesignBusy(true);
+    setDesignStatus(null);
+    try {
+      await persistDesign();
+      setDesignStatus({ tone: 'success', text: 'Design saved to your account.' });
+      trackEvent('design_save', '/marketplace/configure', { productName: product?.name }, product?.id);
+    } catch (err) {
+      setDesignStatus({ tone: 'error', text: err instanceof Error ? err.message : 'Could not save design.' });
+    } finally {
+      setDesignBusy(false);
+    }
+  }, [isAuthenticated, requireSignIn, persistDesign, product]);
+
+  const handleShareDesign = useCallback(async () => {
+    if (!isAuthenticated) return requireSignIn('share');
+    setDesignBusy(true);
+    setDesignStatus(null);
+    try {
+      const saved = await persistDesign();
+      if (!saved?.shareToken) throw new Error('Server did not return a share link.');
+      const url = `${window.location.origin}/marketplace/configure?share=${saved.shareToken}`;
+      let copied = false;
+      try {
+        await navigator.clipboard?.writeText(url);
+        copied = true;
+      } catch {
+        // Clipboard needs a secure context and permission; show the link instead.
+      }
+      setDesignStatus({ tone: 'success', text: copied ? 'Share link copied to clipboard.' : url });
+      trackEvent('design_share', '/marketplace/configure', { productName: product?.name }, product?.id);
+    } catch (err) {
+      setDesignStatus({ tone: 'error', text: err instanceof Error ? err.message : 'Could not share design.' });
+    } finally {
+      setDesignBusy(false);
+    }
+  }, [isAuthenticated, requireSignIn, persistDesign, product]);
 
   const handleStudioExport = useCallback(async () => {
     if (!product) return;
@@ -351,6 +534,26 @@ export default function AIStudioConfigurator() {
               <FieldRenderer key={field.id} field={field} value={config[field.id]} onChange={(val) => updateConfigAndHistory(field.id, val)} onUpload={() => triggerUpload(field.id)} />
             ))}
             <input type="file" ref={fileRef} onChange={handleFileUpload} accept="image/*" style={{ display: 'none' }} aria-label="Upload design image" />
+            {nameListField && (
+              <div style={{ border: '1px solid var(--accent-neon-blue)', borderRadius: 10, padding: 14, background: 'rgba(0,240,255,0.04)' }}>
+                <h3 style={{ fontSize: '0.85rem', marginBottom: 6, color: 'var(--accent-neon-blue)' }}>Cut sheet</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 10, lineHeight: 1.5 }}>
+                  {nameList.length === 0
+                    ? 'Add one name per line above to generate a cut-ready sheet.'
+                    : `${nameList.length} ${nameList.length === 1 ? 'item' : 'items'} laid out on one sheet, ready to cut.`}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => void handleDownloadSheet()}
+                  disabled={nameList.length === 0 || sheetBusy}
+                  style={{ width: '100%', padding: 10, fontSize: '0.85rem' }}
+                >
+                  <Download size={14} style={{ marginRight: 6 }} />
+                  {sheetBusy ? 'Building…' : `Download SVG${nameList.length ? ` (${nameList.length})` : ''}`}
+                </button>
+              </div>
+            )}
             {getFirstZone(schema) && (config.text || config.subtext || config.logo || config.artwork || config.photo) ? (
               <div style={{ border: '1px solid var(--border-color)', borderRadius: 10, padding: 12, background: 'rgba(255,255,255,0.02)', marginTop: 12 }}>
                 <h3 style={{ fontSize: '0.85rem', marginBottom: 8, color: 'var(--text-secondary)' }}>Design Position</h3>
@@ -382,18 +585,54 @@ export default function AIStudioConfigurator() {
               </div>
             )}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-outline" style={{ flex: 1, padding: 8, fontSize: '0.8rem' }} onClick={() => null}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ flex: 1, padding: 8, fontSize: '0.8rem' }}
+                onClick={() => void handleShareDesign()}
+                disabled={designBusy}
+              >
                 <Share2 size={14} style={{ marginRight: 6 }}/> Share
               </button>
-              <button className="btn btn-outline" style={{ flex: 1, padding: 8, fontSize: '0.8rem' }} onClick={() => null}>
-                <Save size={14} style={{ marginRight: 6 }}/> Save
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ flex: 1, padding: 8, fontSize: '0.8rem' }}
+                onClick={() => void handleSaveDesign()}
+                disabled={designBusy}
+              >
+                <Save size={14} style={{ marginRight: 6 }}/> {designBusy ? 'Saving…' : 'Save'}
               </button>
             </div>
+            {designStatus && (
+              <p
+                role="status"
+                style={{
+                  marginTop: 10,
+                  fontSize: '0.75rem',
+                  wordBreak: 'break-all',
+                  color: designStatus.tone === 'error' ? '#ff6b6b' : 'var(--accent-neon-blue)',
+                }}
+              >
+                {designStatus.text}
+              </p>
+            )}
           </div>
         </div>
 
         {/* ==================== CENTER: 3D CANVAS ==================== */}
         <div className="ai-studio-canvas">
+          {nameListField ? (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#fff', borderRadius: 8 }}>
+              {sheetPreview ? (
+                <img src={sheetPreview} alt={`Cut sheet preview with ${nameList.length} names`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+              ) : (
+                <p style={{ color: '#666', fontSize: '0.9rem', textAlign: 'center' }}>
+                  Type one name per line to see your cut sheet.
+                </p>
+              )}
+            </div>
+          ) : (
           <PreviewRegistry
             previewType={schema.preview?.type ?? 'flat-artwork'}
             config={config}
@@ -404,6 +643,7 @@ export default function AIStudioConfigurator() {
             heroImage={product.hero_image}
             zoneBounds={schema ? (() => { const z = getFirstZone(schema); return z ? parseZoneBounds(z) : undefined; })() : undefined}
           />
+          )}
           
           <div className="floating-toolbar glass-panel">
             <button className={`tool-btn ${!isNightMode ? 'active' : ''}`} onClick={() => { setIsNightMode(false); trackEvent('configurator_day_mode', '/marketplace/configure', { productId: product?.id }); }} title="Studio Lighting (Day)">
@@ -432,9 +672,19 @@ export default function AIStudioConfigurator() {
             <button onClick={() => setRightPanelTab('history')} style={{ flex: 1, padding: '12px 0', borderBottom: rightPanelTab === 'history' ? '2px solid var(--accent-neon-blue)' : '2px solid transparent', color: rightPanelTab === 'history' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
               <History size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Versions
             </button>
+            {supportsBulk && (
+              <button onClick={() => setRightPanelTab('bulk')} style={{ flex: 1, padding: '12px 0', borderBottom: rightPanelTab === 'bulk' ? '2px solid var(--accent-neon-blue)' : '2px solid transparent', color: rightPanelTab === 'bulk' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                <Layers size={16} style={{ verticalAlign: 'middle', marginRight: 6 }} /> Bulk
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            {rightPanelTab === 'bulk' && supportsBulk && (
+              <div style={{ flex: 1 }}>
+                <BulkPersonalization variableFields={variableFields} onGenerate={handleBulkGenerate} />
+              </div>
+            )}
             {rightPanelTab === 'ai' && (
               <>
                 {aiFallback ? (
@@ -574,7 +824,8 @@ function FieldRenderer({ field, value, onChange, onUpload }: {
     case 'select':
       return (
         <div>{labelEl}
-          <select className="input-field" value={value || ''} onChange={e => onChange(e.target.value)} style={{ width: '100%', fontSize: '0.85rem', padding: '10px 12px' }} aria-label={field.label}>
+          <select className="input-field" value={value ?? ''} onChange={e => onChange(e.target.value)} style={{ width: '100%', fontSize: '0.85rem', padding: '10px 12px' }} aria-label={field.label}>
+            {!field.options?.some(o => o.id === value) && <option value="" disabled>Select an option…</option>}
             {field.options?.map(o => (
               <option key={o.id} value={o.id}>{o.label}</option>
             ))}
@@ -586,7 +837,7 @@ function FieldRenderer({ field, value, onChange, onUpload }: {
         <div>{labelEl}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {field.options?.map(o => (
-              <button key={o.id} onClick={() => onChange(o.id)} style={{ flex: '1 1 45%', padding: '8px', borderRadius: 6, background: value === o.id ? 'rgba(0,240,255,0.1)' : 'var(--bg-elevated)', border: `1px solid ${value === o.id ? 'var(--accent-neon-blue)' : 'var(--border-color)'}`, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+              <button key={o.id} type="button" onClick={() => onChange(o.id)} style={{ flex: '1 1 45%', padding: '8px', borderRadius: 6, background: value === o.id ? 'rgba(0,240,255,0.1)' : 'var(--bg-elevated)', border: `1px solid ${value === o.id ? 'var(--accent-neon-blue)' : 'var(--border-color)'}`, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-primary)' }}>
                 {o.label}
               </button>
             ))}
@@ -616,8 +867,11 @@ function FieldRenderer({ field, value, onChange, onUpload }: {
             {field.options?.map(o => (
               <button
                 key={o.id}
+                type="button"
                 onClick={() => onChange(o.id)}
                 title={o.label}
+                aria-label={o.label}
+                aria-pressed={value === o.id}
                 style={{
                   width: 32,
                   height: 32,
@@ -637,21 +891,30 @@ function FieldRenderer({ field, value, onChange, onUpload }: {
     case 'font-picker':
       return (
         <div>{labelEl}
-          <select className="input-field" value={value || ''} onChange={e => onChange(e.target.value)} style={{ width: '100%', fontSize: '0.85rem', padding: '10px 12px' }} aria-label={field.label}>
+          <select className="input-field" value={value ?? ''} onChange={e => onChange(e.target.value)} style={{ width: '100%', fontSize: '0.85rem', padding: '10px 12px' }} aria-label={field.label}>
+            {!FONT_LIBRARY.some(f => f.id === value) && <option value="" disabled>Select a font…</option>}
             {FONT_LIBRARY.map(f => (
               <option key={f.id} value={f.id} style={{ fontFamily: f.family }}>{f.name}</option>
             ))}
           </select>
         </div>
       );
-    case 'icon-picker':
+    case 'icon-picker': {
+      // Seeded products declare `{ id: 'icon', type: 'icon-picker' }` with no
+      // `icons` array, so fall back to the full symbol library rather than a
+      // hardcoded four. Buttons show the glyph, not the raw id.
+      const icons = field.icons?.length ? field.icons : Object.keys(ICON_SYMBOLS);
       return (
         <div>{labelEl}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {field.icons?.map(icon => (
+            {icons.map(icon => (
               <button
                 key={icon}
+                type="button"
                 onClick={() => onChange(icon)}
+                title={icon}
+                aria-label={icon}
+                aria-pressed={value === icon}
                 style={{
                   width: 40,
                   height: 40,
@@ -665,12 +928,33 @@ function FieldRenderer({ field, value, onChange, onUpload }: {
                   cursor: 'pointer'
                 }}
               >
-                {icon === 'none' ? '∅' : icon}
+                {icon === 'none' ? '\u2205' : (ICON_SYMBOLS[icon] ?? icon)}
               </button>
-            )) || ['none', 'heart', 'star', 'paw'].map(icon => (
-              <button key={icon} onClick={() => onChange(icon)} style={{ padding: '8px 12px', borderRadius: 8, background: value === icon ? 'rgba(0,240,255,0.1)' : 'var(--bg-elevated)', border: `1px solid ${value === icon ? 'var(--accent-neon-blue)' : 'var(--border-color)'}` }}>{icon}</button>
             ))}
           </div>
+        </div>
+      );
+    }
+    case 'checkbox':
+      // The schema type, buildDefaults and calculatePrice all support checkbox
+      // fields, but the renderer had no case for them — they fell through to
+      // `default: return null` and were invisible (and unpriceable) in the UI.
+      return (
+        <div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: '0.85rem', color: '#e0e0e0' }}>
+            <input
+              type="checkbox"
+              checked={!!value}
+              onChange={e => onChange(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: 'var(--accent-neon-blue)', cursor: 'pointer' }}
+            />
+            <span style={{ fontWeight: 600 }}>{field.label}</span>
+            {field.priceAdd ? (
+              <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: 'var(--accent-neon-blue)' }}>
+                +${field.priceAdd}
+              </span>
+            ) : null}
+          </label>
         </div>
       );
     case 'image':

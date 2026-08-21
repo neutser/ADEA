@@ -14,7 +14,7 @@ function renderAtRoute(path: string) {
 describe('App', () => {
   it('renders home page at /', () => {
     renderAtRoute('/')
-    expect(screen.getByRole('heading', { name: /Custom 3D Logo Signs/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Create Anything/i })).toBeInTheDocument()
   })
 
   it('renders shop at /shop', () => {
